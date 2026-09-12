@@ -1,0 +1,118 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 28,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true
+      }
+    },
+    {
+      "name": "debug",
+      "displayName": "Clang Debug",
+      "inherits": "base",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/clang.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "clang-sanitize",
+      "displayName": "Clang Debug with ASan and UBSan",
+      "inherits": "debug",
+      "cacheVariables": {
+        "ENABLE_ASAN_UBSAN": "ON"
+      }
+    },
+    {
+      "name": "clang-tsanitize",
+      "displayName": "Clang Debug with TSan",
+      "inherits": "debug",
+      "cacheVariables": {
+        "ENABLE_TSAN": "ON"
+      }
+    },
+    {
+      "name": "clang-tidy",
+      "displayName": "Clang Debug with clang-tidy",
+      "inherits": "debug",
+      "cacheVariables": {
+        "ENABLE_TIDY": "ON"
+      }
+    },
+    {
+      "name": "clang-release",
+      "displayName": "Clang Release",
+      "inherits": "base",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/clang.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug"
+    },
+    {
+      "name": "clang-sanitize",
+      "configurePreset": "clang-sanitize"
+    },
+    {
+      "name": "clang-tsanitize",
+      "configurePreset": "clang-tsanitize"
+    },
+    {
+      "name": "clang-tidy",
+      "configurePreset": "clang-tidy"
+    },
+    {
+      "name": "clang-release",
+      "configurePreset": "clang-release"
+    }
+  ],
+  "testPresets": [
+    {
+        "name": "tests",
+        "configurePreset": "debug",
+        "output": {
+            "outputOnFailure": true
+        },
+        "execution": {
+            "jobs": 4,
+            "stopOnFailure": false
+        }
+    },
+    {
+        "name": "tests-sanitize",
+        "configurePreset": "clang-sanitize",
+        "output": {
+            "outputOnFailure": true
+        },
+        "execution": {
+            "jobs": 4,
+            "stopOnFailure": false
+        }
+    },
+    {
+        "name": "tests-tsanitize",
+        "configurePreset": "clang-tsanitize",
+        "output": {
+            "outputOnFailure": true
+        },
+        "execution": {
+            "jobs": 4,
+            "stopOnFailure": false
+        }
+    }
+  ]
+}

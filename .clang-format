@@ -1,0 +1,31 @@
+---
+Language: Cpp
+BasedOnStyle: LLVM
+
+Standard: c++23
+
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+ColumnLimit: 120
+AlwaysBreakTemplateDeclarations: true
+BreakBeforeBraces: Attach
+PointerAlignment: Left
+ReferenceAlignment: Left
+DerivePointerAlignment: false
+
+AllowShortBlocksOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+SpaceBeforeParens: ControlStatements
+SpaceBeforeCpp11BracedList: true
+
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+
+FixNamespaceComments: true
+InsertNewlineAtEOF: true
+...
