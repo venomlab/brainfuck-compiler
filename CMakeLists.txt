@@ -22,7 +22,7 @@ option(
     OFF
 )
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
 add_library(bfc_options INTERFACE)
@@ -31,7 +31,7 @@ add_library(bfc_options INTERFACE)
 target_compile_features(
     bfc_options
     INTERFACE
-        cxx_std_23
+        cxx_std_20
 )
 
 add_library(bfc_warnings INTERFACE)
@@ -83,7 +83,7 @@ endif()
 file(
     GLOB_RECURSE BFC_CORE_SOURCES
     CONFIGURE_DEPENDS
-    "${PROJECT_SOURCE_DIR}/src/core/*.cpp"
+    "${PROJECT_SOURCE_DIR}/src/bfc/core/*.cpp"
 )
 add_library(
     bfc_core
@@ -109,7 +109,7 @@ target_link_libraries(
 
 # Executable
 file(
-    GLOB_RECURSE BFC_SOURCES
+    GLOB BFC_SOURCES
     CONFIGURE_DEPENDS
     "${PROJECT_SOURCE_DIR}/src/bfc/*.cpp"
 )
