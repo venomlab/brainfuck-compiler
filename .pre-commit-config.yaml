@@ -1,0 +1,27 @@
+minimum_pre_commit_version: "3.5.0"
+exclude: ^(build|third_party|external)/
+repos:
+  - repo: local
+    hooks:
+      - id: clang-format
+        name: clang-format
+        description: Format changed C++ files
+        entry: clang-format
+        args:
+          - --style=file
+          - -i
+        language: system
+        always_run: true
+        files: \.(c|cc|cpp|cxx|h|hh|hpp|hxx)$
+      - id: clang-tidy
+        name: clang-tidy && tests
+        description: Analyze changed C++ translation units
+        entry: >-
+          bash -c
+          'cmake --preset clang-tidy
+          && cmake --build --preset clang-tidy --parallel
+          && ctest --test-dir build/clang-tidy --output-on-failure'
+        pass_filenames: false
+        always_run: true
+        language: system
+        require_serial: true
