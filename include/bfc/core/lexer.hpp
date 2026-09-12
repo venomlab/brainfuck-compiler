@@ -47,15 +47,11 @@ class TokenIterator {
 };
 class Tokenizer {
   private:
-    [[maybe_unused]] std::istream& input;
+    std::istream& input;
 
   public:
-    Tokenizer(std::istream&);
-    virtual ~Tokenizer();
-
+    explicit Tokenizer(std::istream& input) : input(input) {};
     Tokenizer() = delete;
-    Tokenizer(const Tokenizer&) = delete;
-    Tokenizer& operator=(const Tokenizer&) = delete;
 
     TokenIterator begin();
     TokenSentinel end();

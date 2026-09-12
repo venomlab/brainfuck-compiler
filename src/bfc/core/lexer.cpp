@@ -8,9 +8,6 @@ namespace bfc::lexer {
 
 constexpr std::string_view parsable_chars = "><+-.,[]";
 
-Tokenizer::Tokenizer(std::istream& input) : input(input) {}
-Tokenizer::~Tokenizer() = default;
-
 TokenIterator Tokenizer::begin() {
     return TokenIterator(input);
 }
