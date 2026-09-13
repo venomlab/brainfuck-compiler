@@ -28,37 +28,49 @@ class Read : public Node {};
 class Print : public Node {};
 class Sequence : public Node {
   private:
-    std::vector<std::unique_ptr<Node>> operations;
+    std::vector<std::unique_ptr<Node>> operations_;
 
   public:
-    explicit Sequence(std::vector<std::unique_ptr<Node>> operations) : operations(std::move(operations)) {}
+    explicit Sequence(std::vector<std::unique_ptr<Node>> operations) : operations_(std::move(operations)) {}
 
     Sequence(Sequence&&) noexcept = default;
     Sequence& operator=(Sequence&&) noexcept = default;
+
+    [[nodiscard]] const std::vector<std::unique_ptr<Node>>& operations() const noexcept {
+        return operations_;
+    }
 
     Sequence() = delete;
 };
 class Loop : public Node {
   private:
-    Sequence inner;
+    Sequence inner_;
 
   public:
-    explicit Loop(Sequence inner) : inner(std::move(inner)) {}
+    explicit Loop(Sequence inner) : inner_(std::move(inner)) {}
 
     Loop(Loop&&) noexcept = default;
     Loop& operator=(Loop&&) noexcept = default;
+
+    [[nodiscard]] const Sequence& inner() const noexcept {
+        return inner_;
+    }
 
     Loop() = delete;
 };
 class Program : public Node {
   private:
-    Sequence operations;
+    Sequence operations_;
 
   public:
-    explicit Program(Sequence operations) : operations(std::move(operations)) {}
+    explicit Program(Sequence operations) : operations_(std::move(operations)) {}
 
     Program(Program&&) noexcept = default;
     Program& operator=(Program&&) noexcept = default;
+
+    [[nodiscard]] const Sequence& operations() const noexcept {
+        return operations_;
+    }
 
     Program() = delete;
 };
