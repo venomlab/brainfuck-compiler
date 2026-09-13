@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.28)
 project(
     brainfuck-compiler
     VERSION 0.0.0
-    LANGUAGES CXX
+    LANGUAGES C CXX
 )
 option(
     ENABLE_ASAN_UBSAN
@@ -22,6 +22,48 @@ option(
     OFF
 )
 
+find_package(LLVM 18.1 REQUIRED CONFIG)
+find_program(
+    LLVM_CONFIG_EXECUTABLE
+    NAMES llvm-config-18
+    HINTS "${LLVM_TOOLS_BINARY_DIR}"
+    REQUIRED
+)
+
+execute_process(
+    COMMAND
+        "${LLVM_CONFIG_EXECUTABLE}"
+        --link-static
+        --libs
+        core
+        support
+    OUTPUT_VARIABLE BFC_LLVM_STATIC_LIBRARIES
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    COMMAND_ERROR_IS_FATAL ANY
+)
+separate_arguments(
+    BFC_LLVM_STATIC_LIBRARIES
+    NATIVE_COMMAND
+    "${BFC_LLVM_STATIC_LIBRARIES}"
+)
+
+execute_process(
+    COMMAND
+        "${LLVM_CONFIG_EXECUTABLE}"
+        --link-static
+        --system-libs
+        core
+        support
+    OUTPUT_VARIABLE BFC_LLVM_STATIC_SYSTEM_LIBRARIES
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    COMMAND_ERROR_IS_FATAL ANY
+)
+separate_arguments(
+    BFC_LLVM_STATIC_SYSTEM_LIBRARIES
+    NATIVE_COMMAND
+    "${BFC_LLVM_STATIC_SYSTEM_LIBRARIES}"
+)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
@@ -32,6 +74,11 @@ target_compile_features(
     bfc_options
     INTERFACE
         cxx_std_20
+)
+target_link_options(
+    bfc_options
+    INTERFACE
+        "$<$<CONFIG:Release>:-static>"
 )
 
 add_library(bfc_warnings INTERFACE)
@@ -107,6 +154,61 @@ target_link_libraries(
         bfc_warnings
 )
 
+# LLVM backend
+file(
+    GLOB_RECURSE BFC_LLVM_SOURCES
+    CONFIGURE_DEPENDS
+    "${PROJECT_SOURCE_DIR}/src/bfc/codegen/*.cpp"
+)
+add_library(
+    bfc_llvm
+    STATIC
+        ${BFC_LLVM_SOURCES}
+)
+target_include_directories(
+    bfc_llvm
+    PUBLIC
+        "${PROJECT_SOURCE_DIR}/include"
+)
+target_include_directories(
+    bfc_llvm
+    SYSTEM PUBLIC
+        "${LLVM_INCLUDE_DIRS}"
+)
+target_link_directories(
+    bfc_llvm
+    PUBLIC
+        "${LLVM_LIBRARY_DIRS}"
+)
+separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND "${LLVM_DEFINITIONS}")
+target_compile_options(
+    bfc_llvm
+    PUBLIC
+        ${LLVM_DEFINITIONS_LIST}
+)
+target_link_libraries(
+    bfc_llvm
+    PUBLIC
+        bfc_core
+        "$<$<NOT:$<CONFIG:Release>>:LLVM>"
+    PRIVATE
+        bfc_warnings
+)
+foreach(BFC_LLVM_LIBRARY IN LISTS BFC_LLVM_STATIC_LIBRARIES)
+    target_link_libraries(
+        bfc_llvm
+        PUBLIC
+            "$<$<CONFIG:Release>:${BFC_LLVM_LIBRARY}>"
+    )
+endforeach()
+foreach(BFC_LLVM_SYSTEM_LIBRARY IN LISTS BFC_LLVM_STATIC_SYSTEM_LIBRARIES)
+    target_link_libraries(
+        bfc_llvm
+        PUBLIC
+            "$<$<CONFIG:Release>:${BFC_LLVM_SYSTEM_LIBRARY}>"
+    )
+endforeach()
+
 # Executable
 file(
     GLOB BFC_SOURCES
@@ -123,18 +225,14 @@ target_link_libraries(
         bfc_core
         bfc_warnings
 )
-### static linking
-target_link_options(
-    bfc
-    PRIVATE
-)
 # TESTS
 include(CTest)
 enable_testing()
-find_package(GTest REQUIRED)
-include(GoogleTest)
 if (BUILD_TESTING)
-    file(GLOB_RECURSE BFC_TEST_SOURCES
+    find_package(GTest REQUIRED)
+    include(GoogleTest)
+
+    file(GLOB BFC_TEST_SOURCES
         CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp"
     )
@@ -150,6 +248,23 @@ if (BUILD_TESTING)
             GTest::gtest_main
     )
     gtest_discover_tests(bfc_tests)
+
+    file(GLOB_RECURSE BFC_LLVM_TEST_SOURCES
+        CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/codegen/*.cpp"
+    )
+    add_executable(
+        bfc_llvm_tests
+        ${BFC_LLVM_TEST_SOURCES}
+    )
+    target_link_libraries(
+        bfc_llvm_tests
+        PRIVATE
+            bfc_llvm
+            bfc_warnings
+            GTest::gtest_main
+    )
+    gtest_discover_tests(bfc_llvm_tests)
 endif()
 
 # CLANG TIDY
@@ -172,3 +287,4 @@ endfunction()
 
 enable_clang_tidy(bfc)
 enable_clang_tidy(bfc_core)
+enable_clang_tidy(bfc_llvm)
