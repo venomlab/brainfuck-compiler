@@ -35,6 +35,7 @@ execute_process(
         "${LLVM_CONFIG_EXECUTABLE}"
         --link-static
         --libs
+        nativecodegen
         core
         support
     OUTPUT_VARIABLE BFC_LLVM_STATIC_LIBRARIES
@@ -52,6 +53,7 @@ execute_process(
         "${LLVM_CONFIG_EXECUTABLE}"
         --link-static
         --system-libs
+        nativecodegen
         core
         support
     OUTPUT_VARIABLE BFC_LLVM_STATIC_SYSTEM_LIBRARIES
