@@ -222,7 +222,7 @@ add_executable(
 target_link_libraries(
     bfc
     PRIVATE
-        bfc_core
+        bfc_llvm
         bfc_warnings
 )
 # TESTS
