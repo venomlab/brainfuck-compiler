@@ -1,16 +1,20 @@
 #include "bfc/core/lexer.hpp"
 #include "bfc/core/parser.hpp"
+#include "bfc/llvm/assembly_writer.hpp"
 #include "bfc/llvm/ir_generator.hpp"
 #include "bfc/llvm/ir_writer.hpp"
 
 #include <iostream>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
+#include <llvm/TargetParser/Host.h>
+#include <llvm/TargetParser/Triple.h>
 #include <string_view>
 
 int main(const int argc, char* argv[]) {
-    if (argc > 2 || (argc == 2 && std::string_view(argv[1]) != "--ir")) {
-        std::cerr << "Usage: bfc [--ir]\n";
+    const std::string_view output_type = argc == 2 ? argv[1] : "--ir";
+    if (argc > 2 || (output_type != "--ir" && output_type != "--asm")) {
+        std::cerr << "Usage: bfc [--ir|--asm]\n";
         return 1;
     }
 
@@ -23,6 +27,11 @@ int main(const int argc, char* argv[]) {
     bfc::llvm::IRGenerator generator(module);
     generator.generate(*program);
 
-    const bfc::llvm::IRWriter writer;
-    writer.write(module, std::cout);
+    if (output_type == "--asm") {
+        const bfc::llvm::AssemblyWriter writer {llvm::Triple(llvm::sys::getDefaultTargetTriple())};
+        writer.write(module, std::cout);
+    } else {
+        const bfc::llvm::IRWriter writer;
+        writer.write(module, std::cout);
+    }
 }
