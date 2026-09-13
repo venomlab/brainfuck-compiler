@@ -6,8 +6,14 @@
 #include <iostream>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
+#include <string_view>
 
-int main() {
+int main(const int argc, char* argv[]) {
+    if (argc > 2 || (argc == 2 && std::string_view(argv[1]) != "--ir")) {
+        std::cerr << "Usage: bfc [--ir]\n";
+        return 1;
+    }
+
     bfc::lexer::Tokenizer tokenizer(std::cin);
     bfc::parser::Parser parser(tokenizer);
     auto program = parser.parse();
