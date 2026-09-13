@@ -158,7 +158,7 @@ target_link_libraries(
 file(
     GLOB_RECURSE BFC_LLVM_SOURCES
     CONFIGURE_DEPENDS
-    "${PROJECT_SOURCE_DIR}/src/bfc/codegen/*.cpp"
+    "${PROJECT_SOURCE_DIR}/src/bfc/llvm/*.cpp"
 )
 add_library(
     bfc_llvm
@@ -251,7 +251,7 @@ if (BUILD_TESTING)
 
     file(GLOB_RECURSE BFC_LLVM_TEST_SOURCES
         CONFIGURE_DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/tests/codegen/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/llvm/*.cpp"
     )
     add_executable(
         bfc_llvm_tests
