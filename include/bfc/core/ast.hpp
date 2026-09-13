@@ -6,6 +6,8 @@
 
 namespace bfc::ast {
 
+class Visitor;
+
 class Node {
   protected:
     Node() = default;
@@ -17,15 +19,35 @@ class Node {
     Node(const Node&) = delete;
     Node& operator=(const Node&) = delete;
 
+    virtual void accept(Visitor& visitor) const = 0;
+
     virtual ~Node() = default;
 };
 
-class Inc : public Node {};
-class Dec : public Node {};
-class MoveLeft : public Node {};
-class MoveRight : public Node {};
-class Read : public Node {};
-class Print : public Node {};
+class Inc : public Node {
+  public:
+    void accept(Visitor& visitor) const override;
+};
+class Dec : public Node {
+  public:
+    void accept(Visitor& visitor) const override;
+};
+class MoveLeft : public Node {
+  public:
+    void accept(Visitor& visitor) const override;
+};
+class MoveRight : public Node {
+  public:
+    void accept(Visitor& visitor) const override;
+};
+class Read : public Node {
+  public:
+    void accept(Visitor& visitor) const override;
+};
+class Print : public Node {
+  public:
+    void accept(Visitor& visitor) const override;
+};
 class Sequence : public Node {
   private:
     std::vector<std::unique_ptr<Node>> operations_;
@@ -39,6 +61,8 @@ class Sequence : public Node {
     [[nodiscard]] const std::vector<std::unique_ptr<Node>>& operations() const noexcept {
         return operations_;
     }
+
+    void accept(Visitor& visitor) const override;
 
     Sequence() = delete;
 };
@@ -56,6 +80,8 @@ class Loop : public Node {
         return *inner_;
     }
 
+    void accept(Visitor& visitor) const override;
+
     Loop() = delete;
 };
 class Program : public Node {
@@ -72,7 +98,24 @@ class Program : public Node {
         return *operations_;
     }
 
+    void accept(Visitor& visitor) const override;
+
     Program() = delete;
+};
+
+class Visitor {
+  public:
+    virtual ~Visitor() = default;
+
+    virtual void visit(const Inc& node) = 0;
+    virtual void visit(const Dec& node) = 0;
+    virtual void visit(const MoveLeft& node) = 0;
+    virtual void visit(const MoveRight& node) = 0;
+    virtual void visit(const Read& node) = 0;
+    virtual void visit(const Print& node) = 0;
+    virtual void visit(const Sequence& node) = 0;
+    virtual void visit(const Loop& node) = 0;
+    virtual void visit(const Program& node) = 0;
 };
 
 } // namespace bfc::ast
