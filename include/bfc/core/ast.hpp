@@ -44,32 +44,32 @@ class Sequence : public Node {
 };
 class Loop : public Node {
   private:
-    Sequence inner_;
+    std::unique_ptr<Sequence> inner_;
 
   public:
-    explicit Loop(Sequence inner) : inner_(std::move(inner)) {}
+    explicit Loop(std::unique_ptr<Sequence> inner) : inner_(std::move(inner)) {}
 
     Loop(Loop&&) noexcept = default;
     Loop& operator=(Loop&&) noexcept = default;
 
     [[nodiscard]] const Sequence& inner() const noexcept {
-        return inner_;
+        return *inner_;
     }
 
     Loop() = delete;
 };
 class Program : public Node {
   private:
-    Sequence operations_;
+    std::unique_ptr<Sequence> operations_;
 
   public:
-    explicit Program(Sequence operations) : operations_(std::move(operations)) {}
+    explicit Program(std::unique_ptr<Sequence> operations) : operations_(std::move(operations)) {}
 
     Program(Program&&) noexcept = default;
     Program& operator=(Program&&) noexcept = default;
 
     [[nodiscard]] const Sequence& operations() const noexcept {
-        return operations_;
+        return *operations_;
     }
 
     Program() = delete;
