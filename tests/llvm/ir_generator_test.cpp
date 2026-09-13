@@ -159,6 +159,17 @@ TEST(IRGeneratorTest, MovesDataPointerBothDirections) {
     EXPECT_FALSE(movements[0]->isInBounds());
     EXPECT_FALSE(movements[1]->isInBounds());
 
+    const auto allocas = find_instructions<::llvm::AllocaInst>(*main);
+    ASSERT_EQ(allocas.size(), 1U);
+    const auto* data_pointer = allocas.front();
+
+    for (const auto* movement : movements) {
+        ASSERT_TRUE(movement->hasOneUse());
+        const auto* store = ::llvm::dyn_cast<::llvm::StoreInst>(*movement->user_begin());
+        ASSERT_NE(store, nullptr);
+        EXPECT_EQ(store->getPointerOperand(), data_pointer);
+    }
+
     const auto* right_offset = ::llvm::dyn_cast<::llvm::ConstantInt>(movements[0]->getOperand(1));
     const auto* left_offset = ::llvm::dyn_cast<::llvm::ConstantInt>(movements[1]->getOperand(1));
     ASSERT_NE(right_offset, nullptr);

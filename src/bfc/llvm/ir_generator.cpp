@@ -53,13 +53,13 @@ void IRGenerator::visit(const ast::MoveLeft&) {
     auto* data_pointer = load_data_pointer(builder_, data_pointer_);
     auto* offset = ::llvm::ConstantInt::getSigned(builder_.getInt64Ty(), -1);
     auto* previous_cell = builder_.CreateGEP(builder_.getInt8Ty(), data_pointer, offset, "previous.cell");
-    builder_.CreateStore(previous_cell, data_pointer);
+    builder_.CreateStore(previous_cell, data_pointer_);
 }
 
 void IRGenerator::visit(const ast::MoveRight&) {
     auto* data_pointer = load_data_pointer(builder_, data_pointer_);
     auto* next_cell = builder_.CreateGEP(builder_.getInt8Ty(), data_pointer, builder_.getInt64(1), "next.cell");
-    builder_.CreateStore(next_cell, data_pointer);
+    builder_.CreateStore(next_cell, data_pointer_);
 }
 
 void IRGenerator::visit(const ast::Read&) {
