@@ -1,41 +1,88 @@
-.PHONY: build run test sanitize tidy clean
+.PHONY: \
+	build \
+	build-debug \
+	build-release \
+	build-sanitize \
+	build-tsanitize \
+	clean \
+	lldb \
+	run \
+	run-debug \
+	run-release \
+	run-sanitize \
+	run-tsanitize \
+	sanitize \
+	test \
+	test-sanitize \
+	test-tsanitize \
+	tidy
+
+CMAKE_CONFIG_INPUTS := \
+	CMakeLists.txt \
+	CMakePresets.json \
+	cmake/toolchains/clang.cmake
+
 clean:
 	@rm -rf build
-build-debug:
+
+build/debug/build.ninja: $(CMAKE_CONFIG_INPUTS)
 	@cmake --preset debug
+
+build-debug: build/debug/build.ninja
 	@cmake --build --preset debug
+
 run-debug: build-debug
 	@echo "-- PROGRAM OUTPUT:"
 	@./build/debug/bfc
+
 lldb: build-debug
 	@lldb ./build/debug/bfc
-build-sanitize:
+
+build/clang-sanitize/build.ninja: $(CMAKE_CONFIG_INPUTS)
 	@cmake --preset clang-sanitize
+
+build-sanitize: build/clang-sanitize/build.ninja
 	@cmake --build --preset clang-sanitize
+
 run-sanitize: build-sanitize
 	@echo "-- PROGRAM OUTPUT:"
 	@./build/clang-sanitize/bfc
-build-tsanitize:
+
+build/clang-tsanitize/build.ninja: $(CMAKE_CONFIG_INPUTS)
 	@cmake --preset clang-tsanitize
+
+build-tsanitize: build/clang-tsanitize/build.ninja
 	@cmake --build --preset clang-tsanitize
+
 run-tsanitize: build-tsanitize
 	@echo "-- PROGRAM OUTPUT:"
 	@./build/clang-tsanitize/bfc
-build-release:
+
+build/clang-release/build.ninja: $(CMAKE_CONFIG_INPUTS)
 	@cmake --preset clang-release
+
+build-release: build/clang-release/build.ninja
 	@cmake --build --preset clang-release
+
 run-release: build-release
 	@echo "-- PROGRAM OUTPUT:"
 	@./build/clang-release/bfc
+
 test: build
 	@ctest --preset tests
+
 test-sanitize: build-sanitize
 	@ctest --preset tests-sanitize
+
 test-tsanitize: build-tsanitize
 	@ctest --preset tests-tsanitize
+
 sanitize: test-sanitize test-tsanitize
-tidy:
+
+build/clang-tidy/build.ninja: $(CMAKE_CONFIG_INPUTS)
 	@cmake --preset clang-tidy
+
+tidy: build/clang-tidy/build.ninja
 	@cmake --build --preset clang-tidy
 	@ctest --test-dir build/clang-tidy --output-on-failure
 
