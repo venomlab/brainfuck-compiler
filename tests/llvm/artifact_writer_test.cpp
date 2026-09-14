@@ -2,6 +2,7 @@
 #include <bfc/llvm/assembly_writer.hpp>
 #include <bfc/llvm/external_link_writer.hpp>
 #include <bfc/llvm/ir_writer.hpp>
+#include <bfc/llvm/lld_link_writer.hpp>
 #include <bfc/llvm/object_writer.hpp>
 #include <gtest/gtest.h>
 #include <llvm/IR/LLVMContext.h>
@@ -22,6 +23,7 @@ static_assert(std::is_base_of_v<ArtifactWriter, IRWriter>);
 static_assert(std::is_base_of_v<ArtifactWriter, AssemblyWriter>);
 static_assert(std::is_base_of_v<ArtifactWriter, ObjectWriter>);
 static_assert(std::is_base_of_v<ArtifactWriter, ExternalLinkWriter>);
+static_assert(std::is_base_of_v<ArtifactWriter, LLDLinkWriter>);
 
 TEST(ArtifactWriterTest, OwnsEveryWriterThroughCommonInterface) {
     const ::llvm::Triple target(::llvm::sys::getDefaultTargetTriple());
@@ -31,8 +33,9 @@ TEST(ArtifactWriterTest, OwnsEveryWriterThroughCommonInterface) {
     writers.push_back(std::make_unique<AssemblyWriter>(target));
     writers.push_back(std::make_unique<ObjectWriter>(target));
     writers.push_back(std::make_unique<ExternalLinkWriter>(target, std::make_unique<IRWriter>()));
+    writers.push_back(std::make_unique<LLDLinkWriter>(ObjectWriter(target)));
 
-    EXPECT_EQ(writers.size(), 4);
+    EXPECT_EQ(writers.size(), 5);
 }
 
 TEST(ArtifactWriterTest, ExposesFileExtensionsThroughCommonInterface) {
@@ -43,11 +46,13 @@ TEST(ArtifactWriterTest, ExposesFileExtensionsThroughCommonInterface) {
     writers.push_back(std::make_unique<AssemblyWriter>(target));
     writers.push_back(std::make_unique<ObjectWriter>(target));
     writers.push_back(std::make_unique<ExternalLinkWriter>(target, std::make_unique<IRWriter>()));
+    writers.push_back(std::make_unique<LLDLinkWriter>(ObjectWriter(target)));
 
     EXPECT_EQ(writers[0]->file_ext(), ".ll");
     EXPECT_EQ(writers[1]->file_ext(), ".s");
     EXPECT_EQ(writers[2]->file_ext(), ".o");
     EXPECT_TRUE(writers[3]->file_ext().empty());
+    EXPECT_TRUE(writers[4]->file_ext().empty());
 }
 
 TEST(ArtifactWriterTest, DispatchesWriteThroughCommonInterface) {

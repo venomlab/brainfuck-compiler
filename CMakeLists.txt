@@ -23,6 +23,10 @@ option(
 )
 
 find_package(LLVM 18.1 REQUIRED CONFIG)
+find_package(
+    LLD 18.1 REQUIRED CONFIG
+    HINTS "${LLVM_LIBRARY_DIRS}/cmake/lld"
+)
 find_program(
     LLVM_CONFIG_EXECUTABLE
     NAMES llvm-config-18
@@ -35,8 +39,9 @@ execute_process(
         "${LLVM_CONFIG_EXECUTABLE}"
         --link-static
         --libs
-        nativecodegen
-        x86asmparser
+        all-targets
+        lto
+        option
         core
         support
     OUTPUT_VARIABLE BFC_LLVM_STATIC_LIBRARIES
@@ -54,8 +59,9 @@ execute_process(
         "${LLVM_CONFIG_EXECUTABLE}"
         --link-static
         --system-libs
-        nativecodegen
-        x86asmparser
+        all-targets
+        lto
+        option
         core
         support
     OUTPUT_VARIABLE BFC_LLVM_STATIC_SYSTEM_LIBRARIES
@@ -195,6 +201,9 @@ target_link_libraries(
     PUBLIC
         bfc_core
         "$<$<NOT:$<CONFIG:Release>>:LLVM>"
+        "$<$<NOT:$<CONFIG:Release>>:lldELF>"
+        "$<$<CONFIG:Release>:$<TARGET_FILE:lldELF>>"
+        "$<$<CONFIG:Release>:$<TARGET_FILE:lldCommon>>"
     PRIVATE
         bfc_warnings
 )
