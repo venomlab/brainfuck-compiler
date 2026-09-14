@@ -27,6 +27,10 @@ find_package(
     LLD 18.1 REQUIRED CONFIG
     HINTS "${LLVM_LIBRARY_DIRS}/cmake/lld"
 )
+find_package(
+    CLI11 REQUIRED CONFIG
+    HINTS "$ENV{VCPKG_ROOT}/installed/x64-linux"
+)
 find_program(
     LLVM_CONFIG_EXECUTABLE
     NAMES llvm-config-18
@@ -164,6 +168,31 @@ target_link_libraries(
         bfc_warnings
 )
 
+# CLI
+file(
+    GLOB_RECURSE BFC_CLI_SOURCES
+    CONFIGURE_DEPENDS
+    "${PROJECT_SOURCE_DIR}/src/bfc/cli/*.cpp"
+)
+add_library(
+    bfc_cli
+    STATIC
+        ${BFC_CLI_SOURCES}
+)
+target_include_directories(
+    bfc_cli
+    PUBLIC
+        "${PROJECT_SOURCE_DIR}/include"
+)
+target_link_libraries(
+    bfc_cli
+    PUBLIC
+        bfc_options
+        CLI11::CLI11
+    PRIVATE
+        bfc_warnings
+)
+
 # LLVM backend
 file(
     GLOB_RECURSE BFC_LLVM_SOURCES
@@ -235,6 +264,7 @@ add_executable(
 target_link_libraries(
     bfc
     PRIVATE
+        bfc_cli
         bfc_llvm
         bfc_warnings
 )
@@ -261,6 +291,23 @@ if (BUILD_TESTING)
             GTest::gtest_main
     )
     gtest_discover_tests(bfc_tests)
+
+    file(GLOB_RECURSE BFC_CLI_TEST_SOURCES
+        CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/cli/*.cpp"
+    )
+    add_executable(
+        bfc_cli_tests
+        ${BFC_CLI_TEST_SOURCES}
+    )
+    target_link_libraries(
+        bfc_cli_tests
+        PRIVATE
+            bfc_cli
+            bfc_warnings
+            GTest::gtest_main
+    )
+    gtest_discover_tests(bfc_cli_tests)
 
     file(GLOB_RECURSE BFC_LLVM_TEST_SOURCES
         CONFIGURE_DEPENDS
@@ -299,5 +346,6 @@ function(enable_clang_tidy target_name)
 endfunction()
 
 enable_clang_tidy(bfc)
+enable_clang_tidy(bfc_cli)
 enable_clang_tidy(bfc_core)
 enable_clang_tidy(bfc_llvm)
