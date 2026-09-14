@@ -2,6 +2,21 @@
 
 Brainfuck compiler built with LLVM infrastructure
 
+## Usage
+
+`bfc` reads a Brainfuck program from standard input.
+
+- `bfc` or `bfc --exe` writes a fully static executable to `./a.out`
+- `bfc --obj` writes an object file to `./out.o`
+- `bfc --asm` writes assembly to standard output
+- `bfc --ir` writes LLVM IR to standard output
+
+Executable generation requires:
+
+- Clang available as `clang` through `PATH`
+- C static runtime library and startup objects
+- System linker with fully static linking support
+
 ## Development
 
 ### Requirements
@@ -18,6 +33,9 @@ Brainfuck compiler built with LLVM infrastructure
 - zstd development files and static library
 - ncurses development files and static library
 - libxml2 development files and static library
+- C and C++ static runtime libraries
+- C runtime startup objects
+- System linker with fully static linking support
 - pre-commit 3.5 or newer
 
 ### Debug build and tests
