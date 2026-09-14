@@ -1,6 +1,6 @@
 # brainfuck-compiler
 
-Brainfuck compiler built with LLVM infrastructure
+Brainfuck compiler built with LLVM infrastructure. It actually compiles
 
 ## Usage
 
@@ -62,6 +62,36 @@ The runtime accepts any `x86_64-*-linux-*` triple except GNU X32.
 
 Other target triples fall back to `clang` through `PATH`
 and require a matching static C runtime, startup objects, and linker.
+
+## Author's note
+
+This is my pet project with goal to learn compilers building,
+and deepen/consolidate my C++ knowledge.
+
+Enjoy this unholy creation :D
+
+---
+
+Even having that Brainfuck is a fun language for fun excercise, but this compiler is actually very real.
+Unlike a lot of other "compilers" that just transpile it to other language
+(like my other brainfuck python "compiler" as well :P)
+this one actually parsers brainfuck and produces LLVM module that can produce
+LLVM IR/ELF obj/Asm or even exe file directly
+
+And I'm planning to add native support to more and more compile targets soon with goal
+to enable cross-compilation. Thanks to LLVM it is way easier than it might be
+
+But even having power of statically linked LLVM and LLD I still was very challanged with
+not being able to produce statically linked brainfuck programs due to reliance on libc
+for reading/outputting characters (putchar/getchar). For one target tripple I resolved it
+by adding assembly insertions with syscalls to avoid relying on libc at all for the x86_64-linux.
+
+So, in order to compile it to x86_64-linux target using this compiler you don't need any external software
+and the executable, even statically linked, is very tiny.
+
+Other targets for now require having `clang` and linkers + C runtime libs in order to compile. I'll try to 
+get rid of this problem soon by at least extending number of supported linkers and not relying solely on `clang`
+
 
 ## Development
 
