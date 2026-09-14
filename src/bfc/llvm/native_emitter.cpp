@@ -12,6 +12,7 @@
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/TargetParser/Triple.h>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -19,16 +20,15 @@
 namespace bfc::llvm {
 namespace {
 
-void initialize_native_target() {
-    if (::llvm::InitializeNativeTarget()) {
-        throw NativeEmissionException("Could not initialize native target");
-    }
-    if (::llvm::InitializeNativeTargetAsmPrinter()) {
-        throw NativeEmissionException("Could not initialize native assembly printer");
-    }
-    if (::llvm::InitializeNativeTargetAsmParser()) {
-        throw NativeEmissionException("Could not initialize native assembly parser");
-    }
+void initialize_targets() {
+    static std::once_flag initialized;
+    std::call_once(initialized, [] {
+        ::llvm::InitializeAllTargetInfos();
+        ::llvm::InitializeAllTargets();
+        ::llvm::InitializeAllTargetMCs();
+        ::llvm::InitializeAllAsmParsers();
+        ::llvm::InitializeAllAsmPrinters();
+    });
 }
 
 std::unique_ptr<::llvm::TargetMachine> create_target_machine(const ::llvm::Triple& target) {
@@ -51,7 +51,7 @@ std::unique_ptr<::llvm::TargetMachine> create_target_machine(const ::llvm::Tripl
 
 void emit_native(::llvm::Module& module, const ::llvm::Triple& target, std::ostream& output,
                  const ::llvm::CodeGenFileType file_type) {
-    initialize_native_target();
+    initialize_targets();
     auto target_machine = create_target_machine(target);
 
     module.setTargetTriple(target.str());

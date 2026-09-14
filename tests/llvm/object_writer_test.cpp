@@ -70,6 +70,32 @@ TEST(ObjectWriterTest, WritesObjectForTarget) {
     EXPECT_TRUE(has_main);
 }
 
+TEST(ObjectWriterTest, WritesObjectForAArch64Target) {
+    const auto program = make_program();
+    ::llvm::LLVMContext context;
+    ::llvm::Module module("brainfuck", context);
+    IRGenerator generator(module);
+    generator.generate(program);
+
+    const ::llvm::Triple target("aarch64-unknown-linux-gnu");
+    const ObjectWriter writer(target);
+    std::ostringstream output(std::ios::out | std::ios::binary);
+
+    writer.write(module, output);
+
+    const std::string object_data = output.str();
+    ASSERT_FALSE(object_data.empty());
+    EXPECT_EQ(module.getTargetTriple(), target.str());
+    EXPECT_FALSE(module.getDataLayoutStr().empty());
+
+    const ::llvm::MemoryBufferRef buffer(::llvm::StringRef(object_data.data(), object_data.size()), "brainfuck.o");
+    auto object = ::llvm::object::ObjectFile::createObjectFile(buffer);
+    if (!object) {
+        FAIL() << ::llvm::toString(object.takeError());
+    }
+    EXPECT_EQ((*object)->getArch(), ::llvm::Triple::aarch64);
+}
+
 TEST(ObjectWriterTest, RejectsBrokenOutputStream) {
     const auto program = make_program();
     ::llvm::LLVMContext context;

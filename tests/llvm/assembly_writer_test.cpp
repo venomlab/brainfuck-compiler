@@ -40,6 +40,25 @@ TEST(AssemblyWriterTest, WritesAssemblyForTarget) {
     EXPECT_FALSE(module.getDataLayoutStr().empty());
 }
 
+TEST(AssemblyWriterTest, WritesAssemblyForAArch64Target) {
+    const auto program = make_empty_program();
+    ::llvm::LLVMContext context;
+    ::llvm::Module module("brainfuck", context);
+    IRGenerator generator(module);
+    generator.generate(program);
+
+    const ::llvm::Triple target("aarch64-unknown-linux-gnu");
+    const AssemblyWriter writer(target);
+    std::ostringstream output;
+
+    writer.write(module, output);
+
+    EXPECT_FALSE(output.str().empty());
+    EXPECT_NE(output.str().find("main"), std::string::npos);
+    EXPECT_EQ(module.getTargetTriple(), target.str());
+    EXPECT_FALSE(module.getDataLayoutStr().empty());
+}
+
 TEST(AssemblyWriterTest, RejectsUnknownTarget) {
     ::llvm::LLVMContext context;
     ::llvm::Module module("brainfuck", context);
