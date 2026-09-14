@@ -1,6 +1,6 @@
 #include "bfc/llvm/assembly_writer.hpp"
 
-#include "native_emitter.hpp"
+#include "bfc/llvm/native_emitter.hpp"
 
 #include <llvm/Support/CodeGen.h>
 #include <utility>
