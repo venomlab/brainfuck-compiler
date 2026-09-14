@@ -1,16 +1,12 @@
 #pragma once
 
-#include <iosfwd>
-
-namespace llvm {
-class Module;
-}
+#include "bfc/llvm/artifact_writer.hpp"
 
 namespace bfc::llvm {
 
-class IRWriter {
+class IRWriter final : public ArtifactWriter {
   public:
-    void write(const ::llvm::Module& module, std::ostream& output) const;
+    void write(::llvm::Module& module, std::ostream& output) const override;
 };
 
 } // namespace bfc::llvm

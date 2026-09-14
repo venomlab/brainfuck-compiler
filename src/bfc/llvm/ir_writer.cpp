@@ -5,7 +5,7 @@
 
 namespace bfc::llvm {
 
-void IRWriter::write(const ::llvm::Module& module, std::ostream& output) const {
+void IRWriter::write(::llvm::Module& module, std::ostream& output) const {
     ::llvm::raw_os_ostream llvm_output {output};
     module.print(llvm_output, nullptr);
     llvm_output.flush();

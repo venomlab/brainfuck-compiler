@@ -1,22 +1,19 @@
 #pragma once
 
-#include <iosfwd>
-#include <llvm/TargetParser/Triple.h>
+#include "bfc/llvm/artifact_writer.hpp"
 
-namespace llvm {
-class Module;
-} // namespace llvm
+#include <llvm/TargetParser/Triple.h>
 
 namespace bfc::llvm {
 
-class AssemblyWriter {
+class AssemblyWriter final : public ArtifactWriter {
   private:
     ::llvm::Triple target_;
 
   public:
     explicit AssemblyWriter(::llvm::Triple target);
 
-    void write(::llvm::Module& module, std::ostream& output) const;
+    void write(::llvm::Module& module, std::ostream& output) const override;
 };
 
 } // namespace bfc::llvm

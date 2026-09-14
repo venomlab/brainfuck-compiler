@@ -10,7 +10,7 @@ namespace {
 
 TEST(IRWriterTest, WritesModuleToStandardOutputStream) {
     ::llvm::LLVMContext context;
-    const ::llvm::Module module {"brainfuck", context};
+    ::llvm::Module module {"brainfuck", context};
     std::ostringstream output;
     const IRWriter writer;
 
