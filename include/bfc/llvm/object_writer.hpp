@@ -16,6 +16,7 @@ class ObjectWriter {
   public:
     explicit ObjectWriter(::llvm::Triple target);
 
+    [[nodiscard]] const ::llvm::Triple& target() const;
     void write(::llvm::Module& module, std::ostream& output) const;
 };
 

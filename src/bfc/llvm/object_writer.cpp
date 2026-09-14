@@ -9,6 +9,10 @@ namespace bfc::llvm {
 
 ObjectWriter::ObjectWriter(::llvm::Triple target) : target_(std::move(target)) {}
 
+const ::llvm::Triple& ObjectWriter::target() const {
+    return target_;
+}
+
 void ObjectWriter::write(::llvm::Module& module, std::ostream& output) const {
     emit_native(module, target_, output, ::llvm::CodeGenFileType::ObjectFile);
 }

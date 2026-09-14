@@ -26,6 +26,13 @@ ast::Program make_program() {
     return ast::Program(std::make_unique<ast::Sequence>(std::move(operations)));
 }
 
+TEST(ObjectWriterTest, PreservesTarget) {
+    const ::llvm::Triple target("aarch64-unknown-linux-gnu");
+    const ObjectWriter writer(target);
+
+    EXPECT_EQ(writer.target().str(), target.str());
+}
+
 TEST(ObjectWriterTest, WritesObjectForTarget) {
     const auto program = make_program();
     ::llvm::LLVMContext context;
