@@ -2,6 +2,39 @@
 
 Brainfuck compiler built with LLVM infrastructure. It actually compiles
 
+## Installation
+
+Visit the [Latest Release](releases/latest) page
+
+Download the `bfc-x86_64-linux.tar.gz` archive, extract it, and place the `bfc` binary somewhere in your `PATH`.
+
+```sh
+tar -xzf bfc-x86_64-linux.tar.gz
+chmod +x bfc
+sudo mv bfc /usr/local/bin/
+```
+
+Verify the installation:
+
+```sh
+bfc --version
+```
+
+Alternatively, install it only for the current user:
+
+```sh
+mkdir -p ~/.local/bin
+mv bfc ~/.local/bin/
+```
+
+Make sure `~/.local/bin` is included in your `PATH`.
+
+The release binary itself is a fully static `x86_64` Linux executable and does not require LLVM, LLD, Clang, or other compiler dependencies to run.
+
+Some compilation targets may still require external tools or runtime libraries.
+Targets supported by the bundled runtime and embedded LLD work without external compiler toolchains;
+see [Bundled runtime targets](#bundled-runtime-targets) for details.
+
 ## Usage
 
 ```text
