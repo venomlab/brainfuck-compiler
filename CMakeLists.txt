@@ -36,6 +36,7 @@ execute_process(
         --link-static
         --libs
         nativecodegen
+        x86asmparser
         core
         support
     OUTPUT_VARIABLE BFC_LLVM_STATIC_LIBRARIES
@@ -54,6 +55,7 @@ execute_process(
         --link-static
         --system-libs
         nativecodegen
+        x86asmparser
         core
         support
     OUTPUT_VARIABLE BFC_LLVM_STATIC_SYSTEM_LIBRARIES

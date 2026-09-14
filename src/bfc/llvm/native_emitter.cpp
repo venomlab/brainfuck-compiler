@@ -26,6 +26,9 @@ void initialize_native_target() {
     if (::llvm::InitializeNativeTargetAsmPrinter()) {
         throw NativeEmissionException("Could not initialize native assembly printer");
     }
+    if (::llvm::InitializeNativeTargetAsmParser()) {
+        throw NativeEmissionException("Could not initialize native assembly parser");
+    }
 }
 
 std::unique_ptr<::llvm::TargetMachine> create_target_machine(const ::llvm::Triple& target) {
