@@ -5,7 +5,9 @@
 #include "bfc/llvm/external_link_writer.hpp"
 #include "bfc/llvm/ir_generator.hpp"
 #include "bfc/llvm/ir_writer.hpp"
+#include "bfc/llvm/lld_link_writer.hpp"
 #include "bfc/llvm/object_writer.hpp"
+#include "bfc/llvm/runtime_generator.hpp"
 
 #include <exception>
 #include <filesystem>
@@ -48,8 +50,14 @@ int main(const int argc, char* argv[]) {
             writer = std::make_unique<bfc::llvm::ObjectWriter>(target);
             output_path = "out.o";
         } else {
-            writer = std::make_unique<bfc::llvm::ExternalLinkWriter>(target, std::make_unique<bfc::llvm::IRWriter>());
             output_path = "a.out";
+            if (bfc::llvm::RuntimeGenerator::supports(target)) {
+                bfc::llvm::RuntimeGenerator(target).generate(module);
+                writer = std::make_unique<bfc::llvm::LLDLinkWriter>(bfc::llvm::ObjectWriter(target));
+            } else {
+                writer =
+                    std::make_unique<bfc::llvm::ExternalLinkWriter>(target, std::make_unique<bfc::llvm::IRWriter>());
+            }
         }
 
         std::ofstream output_file;
