@@ -314,6 +314,16 @@ if (BUILD_TESTING)
     )
     gtest_discover_tests(bfc_cli_tests)
 
+    add_test(
+        NAME bfc_cli_integration
+        COMMAND
+            "${CMAKE_COMMAND}"
+            "-DBFC_EXECUTABLE=$<TARGET_FILE:bfc>"
+            "-DBFC_VERSION=${PROJECT_VERSION}"
+            "-DTEST_DIRECTORY=${CMAKE_CURRENT_BINARY_DIR}/cli-integration"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/cli/integration.cmake"
+    )
+
     file(GLOB_RECURSE BFC_LLVM_TEST_SOURCES
         CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/tests/llvm/*.cpp"
