@@ -1,3 +1,4 @@
+#include "bfc/cli/command_line.hpp"
 #include "bfc/core/lexer.hpp"
 #include "bfc/core/parser.hpp"
 #include "bfc/llvm/artifact_writer.hpp"
@@ -11,6 +12,7 @@
 
 #include <exception>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <iostream>
 #include <llvm/IR/LLVMContext.h>
@@ -19,72 +21,92 @@
 #include <llvm/TargetParser/Triple.h>
 #include <memory>
 #include <stdexcept>
-#include <string_view>
 
-int main(const int argc, char* argv[]) {
-    const std::string_view output_type = argc == 2 ? argv[1] : "--exe";
-    if (argc > 2 ||
-        (output_type != "--ir" && output_type != "--asm" && output_type != "--obj" && output_type != "--exe")) {
-        std::cerr << "Usage: bfc [--ir|--asm|--obj|--exe]\n";
-        return 1;
+namespace {
+
+std::unique_ptr<bfc::llvm::ArtifactWriter> make_writer(const bfc::cli::OutputFormat format, const llvm::Triple& target,
+                                                       llvm::Module& module) {
+    switch (format) {
+    case bfc::cli::OutputFormat::IR:
+        return std::make_unique<bfc::llvm::IRWriter>();
+    case bfc::cli::OutputFormat::Assembly:
+        return std::make_unique<bfc::llvm::AssemblyWriter>(target);
+    case bfc::cli::OutputFormat::Object:
+        return std::make_unique<bfc::llvm::ObjectWriter>(target);
+    case bfc::cli::OutputFormat::Executable:
+        if (bfc::llvm::RuntimeGenerator::supports(target)) {
+            bfc::llvm::RuntimeGenerator(target).generate(module);
+            return std::make_unique<bfc::llvm::LLDLinkWriter>(bfc::llvm::ObjectWriter(target));
+        }
+        return std::make_unique<bfc::llvm::ExternalLinkWriter>(target, std::make_unique<bfc::llvm::IRWriter>());
     }
 
+    throw std::logic_error("Unknown output format");
+}
+
+} // namespace
+
+int main(const int argc, char* argv[]) {
+    bfc::cli::CommandLine command_line;
+
     try {
-        bfc::lexer::Tokenizer tokenizer(std::cin);
+        const bfc::cli::Options options = command_line.parse(argc, argv);
+
+        std::ifstream input_file;
+        std::istream* input = &std::cin;
+        if (options.input_path.has_value()) {
+            input_file.open(*options.input_path);
+            if (!input_file) {
+                throw std::runtime_error("Could not open input file: " + options.input_path->string());
+            }
+            input = &input_file;
+        }
+
+        bfc::lexer::Tokenizer tokenizer(*input);
         bfc::parser::Parser parser(tokenizer);
-        auto program = parser.parse();
+        const auto program = parser.parse();
 
         llvm::LLVMContext context;
         llvm::Module module("brainfuck", context);
         bfc::llvm::IRGenerator generator(module);
         generator.generate(*program);
 
-        const llvm::Triple target(llvm::sys::getDefaultTargetTriple());
-        std::unique_ptr<bfc::llvm::ArtifactWriter> writer;
-        std::filesystem::path output_path;
-        if (output_type == "--ir") {
-            writer = std::make_unique<bfc::llvm::IRWriter>();
-        } else if (output_type == "--asm") {
-            writer = std::make_unique<bfc::llvm::AssemblyWriter>(target);
-        } else if (output_type == "--obj") {
-            writer = std::make_unique<bfc::llvm::ObjectWriter>(target);
-            output_path = "out.o";
-        } else {
-            output_path = "a.out";
-            if (bfc::llvm::RuntimeGenerator::supports(target)) {
-                bfc::llvm::RuntimeGenerator(target).generate(module);
-                writer = std::make_unique<bfc::llvm::LLDLinkWriter>(bfc::llvm::ObjectWriter(target));
-            } else {
-                writer =
-                    std::make_unique<bfc::llvm::ExternalLinkWriter>(target, std::make_unique<bfc::llvm::IRWriter>());
-            }
-        }
+        const llvm::Triple target(options.target_triple.value_or(llvm::sys::getDefaultTargetTriple()));
+        module.setTargetTriple(target.str());
+        const auto writer = make_writer(options.output_format, target, module);
 
         std::ofstream output_file;
         std::ostream* output = &std::cout;
-        if (!output_path.empty()) {
-            output_file.open(output_path, std::ios::binary | std::ios::trunc);
+        if (options.output_path.has_value()) {
+            output_file.open(*options.output_path, std::ios::binary | std::ios::trunc);
             if (!output_file) {
-                throw std::runtime_error("Could not open " + output_path.string());
+                throw std::runtime_error("Could not open output file: " + options.output_path->string());
             }
             output = &output_file;
         }
 
         writer->write(module, *output);
+        output->flush();
+        if (!*output) {
+            throw std::runtime_error("Could not write output");
+        }
 
-        if (output_file.is_open()) {
+        if (options.output_path.has_value()) {
             output_file.close();
             if (!output_file) {
-                throw std::runtime_error("Could not close " + output_path.string());
+                auto error_msg = std::format("Could not close output file: {}", options.output_path->string());
+                throw std::runtime_error(error_msg);
             }
         }
 
-        if (output_type == "--exe") {
-            std::filesystem::permissions(output_path,
+        if (options.output_format == bfc::cli::OutputFormat::Executable && options.output_path.has_value()) {
+            std::filesystem::permissions(*options.output_path,
                                          std::filesystem::perms::owner_exec | std::filesystem::perms::group_exec |
                                              std::filesystem::perms::others_exec,
                                          std::filesystem::perm_options::add);
         }
+    } catch (const CLI::ParseError& error) {
+        return command_line.exit(error);
     } catch (const std::exception& error) {
         std::cerr << "Error: " << error.what() << '\n';
         return 1;
