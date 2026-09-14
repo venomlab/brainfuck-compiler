@@ -95,5 +95,9 @@ TEST(CommandLineTest, SupportsHelp) {
     EXPECT_THROW(parse({"bfc", "--help"}), CLI::CallForHelp);
 }
 
+TEST(CommandLineTest, SupportsVersion) {
+    EXPECT_THROW(parse({"bfc", "--version"}), CLI::CallForVersion);
+}
+
 } // namespace
 } // namespace bfc::cli

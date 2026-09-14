@@ -184,6 +184,11 @@ target_include_directories(
     PUBLIC
         "${PROJECT_SOURCE_DIR}/include"
 )
+target_compile_definitions(
+    bfc_cli
+    PRIVATE
+        BFC_VERSION="${PROJECT_VERSION}"
+)
 target_link_libraries(
     bfc_cli
     PUBLIC

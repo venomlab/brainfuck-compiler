@@ -42,6 +42,8 @@ OutputFormat format_from_path(const std::filesystem::path& path) {
 } // namespace
 
 CommandLine::CommandLine() : app_("Brainfuck compiler") {
+    app_.set_version_flag("--version", "bfc " BFC_VERSION);
+
     CLI::App* output_format = app_.add_option_group("Output format");
     output_format->add_flag("--ir", ir_, "Emit LLVM IR");
     output_format->add_flag("--asm", assembly_, "Emit assembly");
