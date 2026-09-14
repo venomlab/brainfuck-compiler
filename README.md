@@ -4,18 +4,64 @@ Brainfuck compiler built with LLVM infrastructure
 
 ## Usage
 
-`bfc` reads a Brainfuck program from standard input.
+```text
+bfc [--ir|--asm|--obj|--exe] [-o FILE] [-t|--target TARGET] [PROGRAM]
+```
 
-- `bfc` or `bfc --exe` writes a fully static executable to `./a.out`
-- `bfc --obj` writes an object file to `./out.o`
-- `bfc --asm` writes assembly to standard output
-- `bfc --ir` writes LLVM IR to standard output
+`PROGRAM` is optional. Without it, or when it is `-`, `bfc` reads the
+Brainfuck program from standard input.
 
-Executable generation requires:
+Output goes to standard output by default. This includes binary object files
+and executables. Use `-o FILE` to write the artifact to a file.
 
-- Clang available as `clang` through `PATH`
-- C static runtime library and startup objects
-- System linker with fully static linking support
+Output formats:
+
+- `--ir` emits LLVM IR
+- `--asm` emits target assembly
+- `--obj` emits an object file
+- `--exe` emits a fully static executable
+
+The format flags are mutually exclusive. Without a format flag, `bfc` emits an
+executable.
+
+When `-o` is present, its extension can select the output format:
+
+- `.ll` selects LLVM IR
+- `.s` and `.asm` select assembly
+- `.o` and `.obj` select an object file
+- `.out`, `.exe`, and no extension select an executable
+
+An explicit format flag must match the output extension. Unknown extensions
+are rejected.
+
+`-t TARGET` and `--target TARGET` select an LLVM target triple. The host target
+is used by default. Assembly and object generation support all targets built
+into LLVM.
+
+Examples:
+
+```sh
+bfc --ir hello.bf
+bfc -o hello.o hello.bf
+bfc --target aarch64-unknown-linux-gnu -o hello.s hello.bf
+bfc -o hello hello.bf
+bfc --version
+```
+
+## Bundled runtime targets
+
+Some targets work completely isolated without relying on external linkers or libc.
+These target triples use the bundled syscall runtime and embedded LLD. No
+external compiler, LLVM tool, C runtime, startup objects, or linker is invoked:
+
+- `x86_64-unknown-linux-gnu`
+- `x86_64-pc-linux-gnu`
+- `x86_64-unknown-linux-musl`
+
+The runtime accepts any `x86_64-*-linux-*` triple except GNU X32.
+
+Other target triples fall back to `clang` through `PATH`
+and require a matching static C runtime, startup objects, and linker.
 
 ## Development
 
@@ -24,11 +70,13 @@ Executable generation requires:
 - CMake 3.28 or newer
 - Ninja
 - Clang 18.1
-- LLVM 18.1 development files and static libraries
 - clang-format 18.1
 - clang-tidy 18.1
-- LLD 18.1
-- GoogleTest development files
+- vcpkg with CLI11 installed for the `x64-linux` triplet
+- `VCPKG_ROOT` pointing to the vcpkg installation
+- LLVM 18.1 development files and static libraries
+- Polly 18.1 development files and static library
+- LLD 18.1 development files, static libraries, and linker
 - zlib development files and static library
 - zstd development files and static library
 - ncurses development files and static library
@@ -36,15 +84,21 @@ Executable generation requires:
 - C and C++ static runtime libraries
 - C runtime startup objects
 - System linker with fully static linking support
+- GoogleTest development files
 - pre-commit 3.5 or newer
 
 ### Debug build and tests
+
+Debug builds link LLVM and LLD dynamically.
 
 ```sh
 make test
 ```
 
 ### Release build
+
+Release builds produce a fully static `bfc` executable and link LLVM and LLD
+statically.
 
 ```sh
 make build-release
