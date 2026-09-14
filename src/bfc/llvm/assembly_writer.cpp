@@ -9,6 +9,10 @@ namespace bfc::llvm {
 
 AssemblyWriter::AssemblyWriter(::llvm::Triple target) : target_(std::move(target)) {}
 
+std::string_view AssemblyWriter::file_ext() const {
+    return ".s";
+}
+
 void AssemblyWriter::write(::llvm::Module& module, std::ostream& output) const {
     emit_native(module, target_, output, ::llvm::CodeGenFileType::AssemblyFile);
 }

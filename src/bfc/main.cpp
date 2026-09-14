@@ -2,7 +2,7 @@
 #include "bfc/core/parser.hpp"
 #include "bfc/llvm/artifact_writer.hpp"
 #include "bfc/llvm/assembly_writer.hpp"
-#include "bfc/llvm/executable_writer.hpp"
+#include "bfc/llvm/external_link_writer.hpp"
 #include "bfc/llvm/ir_generator.hpp"
 #include "bfc/llvm/ir_writer.hpp"
 #include "bfc/llvm/object_writer.hpp"
@@ -48,7 +48,7 @@ int main(const int argc, char* argv[]) {
             writer = std::make_unique<bfc::llvm::ObjectWriter>(target);
             output_path = "out.o";
         } else {
-            writer = std::make_unique<bfc::llvm::ExecutableWriter>(bfc::llvm::ObjectWriter(target));
+            writer = std::make_unique<bfc::llvm::ExternalLinkWriter>(target, std::make_unique<bfc::llvm::IRWriter>());
             output_path = "a.out";
         }
 

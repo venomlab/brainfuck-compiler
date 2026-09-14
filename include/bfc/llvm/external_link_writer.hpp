@@ -3,17 +3,18 @@
 #include "bfc/llvm/artifact_writer.hpp"
 
 #include <llvm/TargetParser/Triple.h>
+#include <memory>
 
 namespace bfc::llvm {
 
-class ObjectWriter final : public ArtifactWriter {
+class ExternalLinkWriter final : public ArtifactWriter {
   private:
     ::llvm::Triple target_;
+    std::unique_ptr<ArtifactWriter> artifact_writer_;
 
   public:
-    explicit ObjectWriter(::llvm::Triple target);
+    ExternalLinkWriter(::llvm::Triple target, std::unique_ptr<ArtifactWriter> artifact_writer);
 
-    [[nodiscard]] const ::llvm::Triple& target() const;
     [[nodiscard]] std::string_view file_ext() const override;
     void write(::llvm::Module& module, std::ostream& output) const override;
 };

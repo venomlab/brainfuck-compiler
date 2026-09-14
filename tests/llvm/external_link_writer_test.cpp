@@ -1,8 +1,8 @@
 #include <bfc/core/ast.hpp>
 #include <bfc/llvm/executable_emission_exception.hpp>
-#include <bfc/llvm/executable_writer.hpp>
+#include <bfc/llvm/external_link_writer.hpp>
 #include <bfc/llvm/ir_generator.hpp>
-#include <bfc/llvm/object_writer.hpp>
+#include <bfc/llvm/ir_writer.hpp>
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
@@ -41,20 +41,22 @@ std::set<std::filesystem::path> temporary_compiler_files() {
     return files;
 }
 
-TEST(ExecutableWriterTest, WritesStaticExecutable) {
+TEST(ExternalLinkWriterTest, WritesStaticExecutableFromLLVMIR) {
     const ast::Program program(std::make_unique<ast::Sequence>(std::vector<std::unique_ptr<ast::Node>> {}));
     ::llvm::LLVMContext context;
     ::llvm::Module module("brainfuck", context);
     IRGenerator generator(module);
     generator.generate(program);
 
-    const ExecutableWriter writer {ObjectWriter(::llvm::Triple(::llvm::sys::getDefaultTargetTriple()))};
+    const ::llvm::Triple target(::llvm::sys::getDefaultTargetTriple());
+    const ExternalLinkWriter writer(target, std::make_unique<IRWriter>());
     std::ostringstream output(std::ios::out | std::ios::binary);
     const auto temporary_files_before = temporary_compiler_files();
 
     writer.write(module, output);
 
     EXPECT_EQ(temporary_compiler_files(), temporary_files_before);
+    EXPECT_EQ(module.getTargetTriple(), target.str());
     const std::string executable_data = output.str();
     ASSERT_FALSE(executable_data.empty());
 
@@ -93,14 +95,15 @@ TEST(ExecutableWriterTest, WritesStaticExecutable) {
     EXPECT_EQ(::llvm::sys::ExecuteAndWait(executable_path, arguments), 0);
 }
 
-TEST(ExecutableWriterTest, RejectsBrokenOutputStream) {
+TEST(ExternalLinkWriterTest, RejectsBrokenOutputStream) {
     const ast::Program program(std::make_unique<ast::Sequence>(std::vector<std::unique_ptr<ast::Node>> {}));
     ::llvm::LLVMContext context;
     ::llvm::Module module("brainfuck", context);
     IRGenerator generator(module);
     generator.generate(program);
 
-    const ExecutableWriter writer {ObjectWriter(::llvm::Triple(::llvm::sys::getDefaultTargetTriple()))};
+    const ::llvm::Triple target(::llvm::sys::getDefaultTargetTriple());
+    const ExternalLinkWriter writer(target, std::make_unique<IRWriter>());
     std::ostringstream output;
     output.setstate(std::ios::badbit);
 

@@ -1,4 +1,4 @@
-#include "bfc/llvm/executable_writer.hpp"
+#include "bfc/llvm/external_link_writer.hpp"
 
 #include "bfc/llvm/executable_emission_exception.hpp"
 
@@ -7,22 +7,23 @@
 #include <llvm/ADT/SmallString.h>
 #include <llvm/ADT/SmallVector.h>
 #include <llvm/ADT/StringRef.h>
-#include <llvm/MC/TargetRegistry.h>
+#include <llvm/IR/Module.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/FileUtilities.h>
 #include <llvm/Support/Process.h>
 #include <llvm/Support/Program.h>
-#include <llvm/TargetParser/Triple.h>
 #include <optional>
 #include <ostream>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace bfc::llvm {
 namespace {
 
-std::string create_temporary_file(const ::llvm::StringRef suffix) {
+std::string create_temporary_file(const std::string_view file_ext) {
     const std::string prefix = "brainfuck-compiler-" + std::to_string(::llvm::sys::Process::getProcessId());
+    const std::string_view suffix = file_ext.starts_with('.') ? file_ext.substr(1) : file_ext;
     ::llvm::SmallString<128> path;
     if (const auto error = ::llvm::sys::fs::createTemporaryFile(prefix, suffix, path)) {
         throw ExecutableEmissionException("Could not create temporary file: " + error.message());
@@ -30,29 +31,29 @@ std::string create_temporary_file(const ::llvm::StringRef suffix) {
     return path.str().str();
 }
 
-void write_object(const ObjectWriter& writer, ::llvm::Module& module, const std::string& path) {
+void write_artifact(const ArtifactWriter& writer, ::llvm::Module& module, const std::string& path) {
     std::ofstream output(path, std::ios::binary | std::ios::trunc);
     if (!output) {
-        throw ExecutableEmissionException("Could not open temporary object file");
+        throw ExecutableEmissionException("Could not open temporary linker input");
     }
 
     try {
         writer.write(module, output);
     } catch (const std::exception& error) {
-        throw ExecutableEmissionException("Could not emit object file: " + std::string(error.what()));
+        throw ExecutableEmissionException("Could not emit linker input: " + std::string(error.what()));
     }
 }
 
-void link_executable(const ::llvm::Triple& target_triple, const std::string& object_path,
+void link_executable(const ::llvm::Triple& target, const std::string& artifact_path,
                      const std::string& executable_path) {
     const auto clang = ::llvm::sys::findProgramByName("clang");
     if (!clang) {
         throw ExecutableEmissionException("Could not find clang: " + clang.getError().message());
     }
 
-    const std::string target = "--target=" + target_triple.str();
+    const std::string target_argument = "--target=" + target.str();
     const ::llvm::SmallVector<::llvm::StringRef, 6> arguments {
-        *clang, target, "-static", object_path, "-o", executable_path,
+        *clang, target_argument, "-static", artifact_path, "-o", executable_path,
     };
 
     std::string error;
@@ -81,17 +82,24 @@ void copy_executable(const std::string& path, std::ostream& output) {
 
 } // namespace
 
-ExecutableWriter::ExecutableWriter(ObjectWriter object_writer) : object_writer_(std::move(object_writer)) {}
+ExternalLinkWriter::ExternalLinkWriter(::llvm::Triple target, std::unique_ptr<ArtifactWriter> artifact_writer)
+    : target_(std::move(target)), artifact_writer_(std::move(artifact_writer)) {}
 
-void ExecutableWriter::write(::llvm::Module& module, std::ostream& output) const {
-    const std::string object_path = create_temporary_file("o");
-    const ::llvm::FileRemover remove_object(object_path);
+std::string_view ExternalLinkWriter::file_ext() const {
+    return {};
+}
 
-    const std::string executable_path = create_temporary_file("out");
+void ExternalLinkWriter::write(::llvm::Module& module, std::ostream& output) const {
+    module.setTargetTriple(target_.str());
+
+    const std::string artifact_path = create_temporary_file(artifact_writer_->file_ext());
+    const ::llvm::FileRemover remove_artifact(artifact_path);
+
+    const std::string executable_path = create_temporary_file(".out");
     const ::llvm::FileRemover remove_executable(executable_path);
 
-    write_object(object_writer_, module, object_path);
-    link_executable(object_writer_.target(), object_path, executable_path);
+    write_artifact(*artifact_writer_, module, artifact_path);
+    link_executable(target_, artifact_path, executable_path);
     copy_executable(executable_path, output);
 }
 

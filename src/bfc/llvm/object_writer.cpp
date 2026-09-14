@@ -13,6 +13,10 @@ const ::llvm::Triple& ObjectWriter::target() const {
     return target_;
 }
 
+std::string_view ObjectWriter::file_ext() const {
+    return ".o";
+}
+
 void ObjectWriter::write(::llvm::Module& module, std::ostream& output) const {
     emit_native(module, target_, output, ::llvm::CodeGenFileType::ObjectFile);
 }

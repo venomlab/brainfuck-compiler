@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iosfwd>
+#include <string_view>
 
 namespace llvm {
 class Module;
@@ -12,6 +13,7 @@ class ArtifactWriter {
   public:
     virtual ~ArtifactWriter() = default;
 
+    [[nodiscard]] virtual std::string_view file_ext() const = 0;
     virtual void write(::llvm::Module& module, std::ostream& output) const = 0;
 };
 

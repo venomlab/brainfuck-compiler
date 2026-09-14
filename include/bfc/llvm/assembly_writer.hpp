@@ -13,6 +13,7 @@ class AssemblyWriter final : public ArtifactWriter {
   public:
     explicit AssemblyWriter(::llvm::Triple target);
 
+    [[nodiscard]] std::string_view file_ext() const override;
     void write(::llvm::Module& module, std::ostream& output) const override;
 };
 

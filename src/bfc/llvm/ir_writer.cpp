@@ -5,6 +5,10 @@
 
 namespace bfc::llvm {
 
+std::string_view IRWriter::file_ext() const {
+    return ".ll";
+}
+
 void IRWriter::write(::llvm::Module& module, std::ostream& output) const {
     ::llvm::raw_os_ostream llvm_output {output};
     module.print(llvm_output, nullptr);
