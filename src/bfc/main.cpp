@@ -1,5 +1,6 @@
 #include "bfc/core/lexer.hpp"
 #include "bfc/core/parser.hpp"
+#include "bfc/llvm/artifact_writer.hpp"
 #include "bfc/llvm/assembly_writer.hpp"
 #include "bfc/llvm/executable_writer.hpp"
 #include "bfc/llvm/ir_generator.hpp"
@@ -14,6 +15,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/TargetParser/Host.h>
 #include <llvm/TargetParser/Triple.h>
+#include <memory>
 #include <stdexcept>
 #include <string_view>
 
@@ -35,32 +37,42 @@ int main(const int argc, char* argv[]) {
         bfc::llvm::IRGenerator generator(module);
         generator.generate(*program);
 
+        const llvm::Triple target(llvm::sys::getDefaultTargetTriple());
+        std::unique_ptr<bfc::llvm::ArtifactWriter> writer;
+        std::filesystem::path output_path;
         if (output_type == "--ir") {
-            const bfc::llvm::IRWriter writer;
-            writer.write(module, std::cout);
+            writer = std::make_unique<bfc::llvm::IRWriter>();
         } else if (output_type == "--asm") {
-            const bfc::llvm::AssemblyWriter writer {llvm::Triple(llvm::sys::getDefaultTargetTriple())};
-            writer.write(module, std::cout);
+            writer = std::make_unique<bfc::llvm::AssemblyWriter>(target);
         } else if (output_type == "--obj") {
-            std::ofstream output("out.o", std::ios::binary | std::ios::trunc);
-            const bfc::llvm::ObjectWriter writer {llvm::Triple(llvm::sys::getDefaultTargetTriple())};
-            writer.write(module, output);
+            writer = std::make_unique<bfc::llvm::ObjectWriter>(target);
+            output_path = "out.o";
         } else {
-            std::ofstream output("a.out", std::ios::binary | std::ios::trunc);
-            if (!output) {
-                throw std::runtime_error("Could not open a.out");
+            writer = std::make_unique<bfc::llvm::ExecutableWriter>(bfc::llvm::ObjectWriter(target));
+            output_path = "a.out";
+        }
+
+        std::ofstream output_file;
+        std::ostream* output = &std::cout;
+        if (!output_path.empty()) {
+            output_file.open(output_path, std::ios::binary | std::ios::trunc);
+            if (!output_file) {
+                throw std::runtime_error("Could not open " + output_path.string());
             }
+            output = &output_file;
+        }
 
-            const bfc::llvm::ExecutableWriter writer {
-                bfc::llvm::ObjectWriter(llvm::Triple(llvm::sys::getDefaultTargetTriple()))};
-            writer.write(module, output);
+        writer->write(module, *output);
 
-            output.close();
-            if (!output) {
-                throw std::runtime_error("Could not close a.out");
+        if (output_file.is_open()) {
+            output_file.close();
+            if (!output_file) {
+                throw std::runtime_error("Could not close " + output_path.string());
             }
+        }
 
-            std::filesystem::permissions("a.out",
+        if (output_type == "--exe") {
+            std::filesystem::permissions(output_path,
                                          std::filesystem::perms::owner_exec | std::filesystem::perms::group_exec |
                                              std::filesystem::perms::others_exec,
                                          std::filesystem::perm_options::add);
