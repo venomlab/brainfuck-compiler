@@ -50,7 +50,7 @@ class Tokenizer {
     std::istream& input;
 
   public:
-    explicit Tokenizer(std::istream& input) : input(input) {};
+    explicit Tokenizer(std::istream& input_stream) : input(input_stream) {};
     Tokenizer() = delete;
 
     TokenIterator begin();
