@@ -99,8 +99,11 @@ file(REMOVE_RECURSE "${linux_staging_dir}" "${windows_staging_dir}")
 file(SHA256 "${linux_archive}" linux_archive_sha256)
 file(SHA256 "${windows_archive}" windows_archive_sha256)
 file(
-    WRITE "${staging_dir}/SHA256SUMS"
+    WRITE "${linux_archive}.sha256"
     "${linux_archive_sha256}  ${linux_archive_name}\n"
+)
+file(
+    WRITE "${windows_archive}.sha256"
     "${windows_archive_sha256}  ${windows_archive_name}\n"
 )
 

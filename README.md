@@ -219,18 +219,21 @@ dist/
 ├── bfc
 ├── bfc.exe
 ├── bfc-VERSION-x86_64-linux.tar.gz
+├── bfc-VERSION-x86_64-linux.tar.gz.sha256
 ├── bfc-VERSION-x86_64-windows.zip
-└── SHA256SUMS
+└── bfc-VERSION-x86_64-windows.zip.sha256
 ```
 
 `bfc` and `bfc.exe` are unpacked copies for local testing. The archives contain
-one platform binary each. `SHA256SUMS` contains checksums for both archives.
+one platform binary each. Each `.sha256` sidecar contains the checksum and file
+name of its archive.
 
 Verify packaged archives:
 
 ```sh
 cd dist
-sha256sum --check SHA256SUMS
+sha256sum --check bfc-VERSION-x86_64-linux.tar.gz.sha256
+sha256sum --check bfc-VERSION-x86_64-windows.zip.sha256
 ```
 
 ### Windows x86-64 cross-build
