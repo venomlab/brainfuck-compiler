@@ -5,6 +5,7 @@
 	build-sanitize \
 	build-tsanitize \
 	gcc-release-w64 \
+	release \
 	clean \
 	lldb \
 	run \
@@ -76,6 +77,14 @@ build/gcc-release-w64/build.ninja: $(CMAKE_CONFIG_INPUTS)
 
 gcc-release-w64: build/gcc-release-w64/build.ninja
 	@cmake --build --preset gcc-release-w64
+
+release: build-release gcc-release-w64
+	@cmake \
+		-DBFC_LINUX_BINARY="$(CURDIR)/build/clang-release/bfc" \
+		-DBFC_WINDOWS_BINARY="$(CURDIR)/build/gcc-release-w64/bfc.exe" \
+		-DBFC_CMAKE_CACHE="$(CURDIR)/build/clang-release/CMakeCache.txt" \
+		-DBFC_DIST_DIR="$(CURDIR)/dist" \
+		-P "$(CURDIR)/cmake/package-release.cmake"
 
 test: build
 	@ctest --preset tests

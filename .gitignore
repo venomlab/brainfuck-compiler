@@ -43,6 +43,9 @@
 build/
 Build/
 build-*/
+/dist/
+/dist.tmp/
+/dist.backup/
 
 # CMake generated files
 CMakeFiles/

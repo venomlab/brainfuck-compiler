@@ -6,10 +6,12 @@ Brainfuck compiler built with LLVM infrastructure. It actually compiles
 
 Visit the [Latest Release](releases/latest) page
 
-Download the `bfc-x86_64-linux.tar.gz` archive, extract it, and place the `bfc` binary somewhere in your `PATH`.
+Download the `bfc-VERSION-x86_64-linux.tar.gz` archive, replace `VERSION`
+with the release version, extract it, and place the `bfc` binary somewhere in
+your `PATH`.
 
 ```sh
-tar -xzf bfc-x86_64-linux.tar.gz
+tar -xzf bfc-VERSION-x86_64-linux.tar.gz
 chmod +x bfc
 sudo mv bfc /usr/local/bin/
 ```
@@ -30,6 +32,10 @@ mv bfc ~/.local/bin/
 Make sure `~/.local/bin` is included in your `PATH`.
 
 The release binary itself is a fully static `x86_64` Linux executable and does not require LLVM, LLD, Clang, or other compiler dependencies to run.
+
+Windows releases use the `bfc-VERSION-x86_64-windows.zip` archive. Extract
+`bfc.exe` and run it directly. The compiler depends only on Windows system
+DLLs.
 
 Some compilation targets may still require external tools or runtime libraries.
 Targets supported by the bundled runtime and embedded LLD work without external compiler toolchains;
@@ -196,6 +202,35 @@ statically.
 
 ```sh
 make build-release
+```
+
+### Release packages
+
+Build release binaries for every supported host platform and package them:
+
+```sh
+make release
+```
+
+The command replaces `dist/` with:
+
+```text
+dist/
+├── bfc
+├── bfc.exe
+├── bfc-VERSION-x86_64-linux.tar.gz
+├── bfc-VERSION-x86_64-windows.zip
+└── SHA256SUMS
+```
+
+`bfc` and `bfc.exe` are unpacked copies for local testing. The archives contain
+one platform binary each. `SHA256SUMS` contains checksums for both archives.
+
+Verify packaged archives:
+
+```sh
+cd dist
+sha256sum --check SHA256SUMS
 ```
 
 ### Windows x86-64 cross-build
