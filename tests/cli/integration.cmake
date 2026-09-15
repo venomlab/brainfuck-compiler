@@ -23,6 +23,13 @@ function(expect_contains name contents expected)
     endif()
 endfunction()
 
+function(expect_not_contains name contents unexpected)
+    string(FIND "${contents}" "${unexpected}" position)
+    if (NOT position EQUAL -1)
+        message(FATAL_ERROR "${name} contains unexpected '${unexpected}'")
+    endif()
+endfunction()
+
 function(expect_elf name path)
     file(READ "${path}" magic LIMIT 4 HEX)
     if (NOT magic STREQUAL "7f454c46")
@@ -55,6 +62,54 @@ string(STRIP "${version_output}" version_output)
 if (NOT version_output STREQUAL "bfc ${BFC_VERSION}")
     message(FATAL_ERROR "Unexpected version: '${version_output}'")
 endif()
+
+run_bfc(target_list --list-targets)
+expect_contains("target list" "${target_list}" "Native targets:")
+expect_contains("target list" "${target_list}" "x86_64-unknown-linux-gnu")
+expect_contains("target list" "${target_list}" "x86_64-w64-windows-gnu")
+expect_contains("target list" "${target_list}" "External targets through clang:")
+
+execute_process(
+    COMMAND
+        "${CMAKE_COMMAND}" -E env "PATH=/nonexistent"
+        "${BFC_EXECUTABLE}" --list-targets
+    RESULT_VARIABLE native_targets_result
+    OUTPUT_VARIABLE native_targets_output
+    ERROR_VARIABLE native_targets_error
+)
+require_success("native target list without clang" "${native_targets_result}" "${native_targets_error}")
+expect_contains("native target list without clang" "${native_targets_output}" "Native targets:")
+expect_not_contains(
+    "native target list without clang"
+    "${native_targets_output}"
+    "External targets through clang:"
+)
+
+set(failing_clang "${TEST_DIRECTORY}/clang")
+file(WRITE "${failing_clang}" "#!/bin/sh\nexit 7\n")
+file(
+    CHMOD "${failing_clang}"
+    PERMISSIONS
+        OWNER_READ
+        OWNER_WRITE
+        OWNER_EXECUTE
+)
+execute_process(
+    COMMAND
+        "${CMAKE_COMMAND}" -E env "PATH=${TEST_DIRECTORY}"
+        "${BFC_EXECUTABLE}" --list-targets
+    RESULT_VARIABLE failing_clang_result
+    OUTPUT_VARIABLE failing_clang_output
+    ERROR_VARIABLE failing_clang_error
+)
+require_success("native target list after clang failure" "${failing_clang_result}" "${failing_clang_error}")
+expect_contains("target list after clang failure" "${failing_clang_output}" "Native targets:")
+expect_not_contains(
+    "target list after clang failure"
+    "${failing_clang_output}"
+    "External targets through clang:"
+)
+expect_contains("clang target warning" "${failing_clang_error}" "Warning: could not query clang targets")
 
 execute_process(
     COMMAND "${BFC_EXECUTABLE}" --ir

@@ -39,6 +39,7 @@ see [Bundled runtime targets](#bundled-runtime-targets) for details.
 
 ```text
 bfc [--ir|--asm|--obj|--exe] [-o FILE] [-t|--target TARGET] [PROGRAM]
+bfc --list-targets
 ```
 
 `PROGRAM` is optional. Without it, or when it is `-`, `bfc` reads the
@@ -71,15 +72,23 @@ are rejected.
 is used by default. Assembly and object generation support all targets built
 into LLVM.
 
+`--list-targets` prints canonical targets supported by bundled runtimes. The
+host target is marked with `(default)` when it is present in that list. When
+`clang` is available through `PATH`, its registered targets are printed in a
+separate external-target section. Without `clang`, only native targets are
+shown. The flag cannot be combined with compilation options or a program file.
+
 Examples:
 
 ```sh
+bfc --version
+bfc --help
+bfc --list-targets
 bfc --ir hello.bf
 bfc -o hello.o hello.bf
 bfc --target aarch64-unknown-linux-gnu -o hello.s hello.bf
 bfc -o hello hello.bf
 bfc --target x86_64-w64-windows-gnu -o hello.exe hello.bf
-bfc --version
 ```
 
 ## Bundled runtime targets

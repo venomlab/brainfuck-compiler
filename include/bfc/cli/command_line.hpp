@@ -20,6 +20,7 @@ struct Options {
     std::optional<std::filesystem::path> input_path;
     std::optional<std::filesystem::path> output_path;
     std::optional<std::string> target_triple;
+    bool list_targets;
 };
 
 class CommandLine {
@@ -35,6 +36,7 @@ class CommandLine {
     bool assembly_ = false;
     bool object_ = false;
     bool executable_ = false;
+    bool list_targets_ = false;
     std::string output_path_;
     std::string target_triple_;
     std::string input_path_;

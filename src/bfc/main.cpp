@@ -9,6 +9,7 @@
 #include "bfc/llvm/lld_link_writer.hpp"
 #include "bfc/llvm/object_writer.hpp"
 #include "bfc/llvm/runtime_generator.hpp"
+#include "bfc/llvm/target_list.hpp"
 
 #include <exception>
 #include <filesystem>
@@ -51,6 +52,10 @@ int main(const int argc, char* argv[]) {
 
     try {
         const bfc::cli::Options options = command_line.parse(argc, argv);
+        if (options.list_targets) {
+            bfc::llvm::write_target_list(std::cout, std::cerr);
+            return std::cout ? 0 : 1;
+        }
 
         std::ifstream input_file;
         std::istream* input = &std::cin;

@@ -43,6 +43,7 @@ OutputFormat format_from_path(const std::filesystem::path& path) {
 
 CommandLine::CommandLine() : app_("Brainfuck compiler") {
     app_.set_version_flag("--version", "bfc " BFC_VERSION);
+    app_.add_flag("--list-targets", list_targets_, "List compilation targets");
 
     CLI::App* output_format = app_.add_option_group("Output format");
     output_format->add_flag("--ir", ir_, "Emit LLVM IR");
@@ -58,6 +59,11 @@ CommandLine::CommandLine() : app_("Brainfuck compiler") {
 
 Options CommandLine::parse(int argc, char* argv[]) {
     app_.parse(argc, argv);
+
+    if (list_targets_ && (ir_ || assembly_ || object_ || executable_ || !output_path_.empty() ||
+                          !target_triple_.empty() || !input_path_.empty())) {
+        throw CLI::ValidationError("--list-targets", "cannot be combined with compilation options");
+    }
 
     const std::optional<OutputFormat> requested = explicit_format(ir_, assembly_, object_, executable_);
     const std::optional<std::filesystem::path> output =
@@ -85,6 +91,7 @@ Options CommandLine::parse(int argc, char* argv[]) {
         .input_path = std::move(input),
         .output_path = output,
         .target_triple = target,
+        .list_targets = list_targets_,
     };
 }
 

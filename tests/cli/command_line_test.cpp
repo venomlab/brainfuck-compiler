@@ -27,6 +27,21 @@ TEST(CommandLineTest, UsesExecutableAndStandardStreamsByDefault) {
     EXPECT_FALSE(options.input_path.has_value());
     EXPECT_FALSE(options.output_path.has_value());
     EXPECT_FALSE(options.target_triple.has_value());
+    EXPECT_FALSE(options.list_targets);
+}
+
+TEST(CommandLineTest, ParsesListTargets) {
+    const Options options = parse({"bfc", "--list-targets"});
+
+    EXPECT_TRUE(options.list_targets);
+}
+
+TEST(CommandLineTest, RejectsListTargetsWithCompilationOptions) {
+    EXPECT_THROW(parse({"bfc", "--list-targets", "--ir"}), CLI::ValidationError);
+    EXPECT_THROW(parse({"bfc", "--list-targets", "-o", "program.out"}), CLI::ValidationError);
+    EXPECT_THROW(parse({"bfc", "--list-targets", "-t", "x86_64-unknown-linux-gnu"}), CLI::ValidationError);
+    EXPECT_THROW(parse({"bfc", "--list-targets", "program.bf"}), CLI::ValidationError);
+    EXPECT_THROW(parse({"bfc", "--list-targets", "-"}), CLI::ValidationError);
 }
 
 TEST(CommandLineTest, ReadsProgramFromPath) {
