@@ -6,11 +6,16 @@
 #include <exception>
 #include <fstream>
 #include <lld/Common/Driver.h>
+#include <llvm/ADT/ArrayRef.h>
 #include <llvm/ADT/SmallString.h>
+#include <llvm/BinaryFormat/COFF.h>
+#include <llvm/Object/COFFImportFile.h>
+#include <llvm/Support/Error.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/FileUtilities.h>
 #include <llvm/Support/Process.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/TargetParser/Triple.h>
 #include <mutex>
 #include <ostream>
 #include <string>
@@ -18,6 +23,7 @@
 #include <utility>
 
 LLD_HAS_DRIVER(elf)
+LLD_HAS_DRIVER(coff)
 
 namespace bfc::llvm {
 namespace {
@@ -51,14 +57,28 @@ void write_object(const ObjectWriter& writer, ::llvm::Module& module, const std:
     }
 }
 
-void link_executable(const std::string& object_path, const std::string& executable_path) {
-    const std::array arguments {
-        "ld.lld", "-static", "--entry=_start", "--fatal-warnings", object_path.c_str(), "-o", executable_path.c_str(),
-    };
-    const std::array drivers {
-        ::lld::DriverDef {::lld::Gnu, &::lld::elf::link},
+::llvm::object::COFFShortExport windows_export(const std::string_view name) {
+    ::llvm::object::COFFShortExport symbol;
+    symbol.Name = name;
+    return symbol;
+}
+
+void write_windows_import_library(const std::string& path) {
+    const std::array exports {
+        windows_export("GetStdHandle"),
+        windows_export("ReadFile"),
+        windows_export("WriteFile"),
+        windows_export("ExitProcess"),
     };
 
+    if (auto error = ::llvm::object::writeImportLibrary("KERNEL32.dll", path, exports,
+                                                        ::llvm::COFF::IMAGE_FILE_MACHINE_AMD64, false)) {
+        throw ExecutableEmissionException("Could not create Windows import library: " +
+                                          ::llvm::toString(std::move(error)));
+    }
+}
+
+void run_lld(const ::llvm::ArrayRef<const char*> arguments, const ::llvm::ArrayRef<::lld::DriverDef> drivers) {
     std::string stdout_message;
     std::string stderr_message;
     ::llvm::raw_string_ostream stdout_stream(stdout_message);
@@ -83,6 +103,47 @@ void link_executable(const std::string& object_path, const std::string& executab
     }
 }
 
+void link_elf(const std::string& object_path, const std::string& executable_path) {
+    const std::array arguments {
+        "ld.lld", "-static", "--entry=_start", "--fatal-warnings", object_path.c_str(), "-o", executable_path.c_str(),
+    };
+    const std::array drivers {
+        ::lld::DriverDef {::lld::Gnu, &::lld::elf::link},
+    };
+
+    run_lld(arguments, drivers);
+}
+
+void link_coff(const std::string& object_path, const std::string& executable_path) {
+    const std::string import_library_path = create_temporary_file("lib");
+    const ::llvm::FileRemover remove_import_library(import_library_path);
+    write_windows_import_library(import_library_path);
+
+    const std::string output_argument = "/out:" + executable_path;
+    const std::array arguments {
+        "lld-link",     "/entry:mainCRTStartup", "/subsystem:console",        "/nodefaultlib",
+        "/machine:x64", object_path.c_str(),     import_library_path.c_str(), output_argument.c_str(),
+    };
+    const std::array drivers {
+        ::lld::DriverDef {::lld::WinLink, &::lld::coff::link},
+    };
+
+    run_lld(arguments, drivers);
+}
+
+void link_executable(const ::llvm::Triple& target, const std::string& object_path, const std::string& executable_path) {
+    if (target.isOSLinux()) {
+        link_elf(object_path, executable_path);
+        return;
+    }
+    if (target.getArch() == ::llvm::Triple::x86_64 && target.isOSWindows()) {
+        link_coff(object_path, executable_path);
+        return;
+    }
+
+    throw ExecutableEmissionException("Unsupported LLD executable target: " + target.str());
+}
+
 void copy_executable(const std::string& path, std::ostream& output) {
     std::ifstream input(path, std::ios::binary);
     if (!input) {
@@ -104,14 +165,16 @@ std::string_view LLDLinkWriter::file_ext() const {
 }
 
 void LLDLinkWriter::write(::llvm::Module& module, std::ostream& output) const {
-    const std::string object_path = create_temporary_file("o");
+    const ::llvm::Triple& target = object_writer_.target();
+    const bool windows = target.isOSWindows();
+    const std::string object_path = create_temporary_file(windows ? "obj" : "o");
     const ::llvm::FileRemover remove_object(object_path);
 
-    const std::string executable_path = create_temporary_file("out");
+    const std::string executable_path = create_temporary_file(windows ? "exe" : "out");
     const ::llvm::FileRemover remove_executable(executable_path);
 
     write_object(object_writer_, module, object_path);
-    link_executable(object_path, executable_path);
+    link_executable(target, object_path, executable_path);
     copy_executable(executable_path, output);
 }
 

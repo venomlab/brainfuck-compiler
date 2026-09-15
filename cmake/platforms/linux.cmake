@@ -9,6 +9,8 @@ find_package(
     CLI11 REQUIRED CONFIG
     HINTS "$ENV{VCPKG_ROOT}/installed/x64-linux"
 )
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(BFC_LIBXML2 REQUIRED libxml-2.0)
 find_program(
     LLVM_CONFIG_EXECUTABLE
     NAMES llvm-config-18
@@ -23,6 +25,9 @@ set(
         option
         core
         support
+        libdriver
+        windowsdriver
+        windowsmanifest
 )
 execute_process(
     COMMAND
@@ -86,7 +91,9 @@ function(bfc_configure_platform_llvm target)
         PUBLIC
             "$<$<NOT:$<CONFIG:Release>>:LLVM>"
             "$<$<NOT:$<CONFIG:Release>>:lldELF>"
+            "$<$<NOT:$<CONFIG:Release>>:lldCOFF>"
             "$<$<CONFIG:Release>:$<TARGET_FILE:lldELF>>"
+            "$<$<CONFIG:Release>:$<TARGET_FILE:lldCOFF>>"
             "$<$<CONFIG:Release>:$<TARGET_FILE:lldCommon>>"
     )
     foreach(BFC_LLVM_LIBRARY IN LISTS BFC_LLVM_STATIC_LIBRARIES)
@@ -101,6 +108,13 @@ function(bfc_configure_platform_llvm target)
             "${target}"
             PUBLIC
                 "$<$<CONFIG:Release>:${BFC_LLVM_SYSTEM_LIBRARY}>"
+        )
+    endforeach()
+    foreach(BFC_LIBXML2_STATIC_LIBRARY IN LISTS BFC_LIBXML2_STATIC_LIBRARIES)
+        target_link_libraries(
+            "${target}"
+            PUBLIC
+                "$<$<CONFIG:Release>:${BFC_LIBXML2_STATIC_LIBRARY}>"
         )
     endforeach()
 endfunction()

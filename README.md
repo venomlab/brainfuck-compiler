@@ -78,14 +78,18 @@ bfc --ir hello.bf
 bfc -o hello.o hello.bf
 bfc --target aarch64-unknown-linux-gnu -o hello.s hello.bf
 bfc -o hello hello.bf
+bfc --target x86_64-w64-windows-gnu -o hello.exe hello.bf
 bfc --version
 ```
 
 ## Bundled runtime targets
 
-Some targets work completely isolated without relying on external linkers or libc.
-These target triples use the bundled syscall runtime and embedded LLD. No
-external compiler, LLVM tool, C runtime, startup objects, or linker is invoked:
+Some targets work completely isolated without relying on external linkers or C
+runtimes. These targets use a bundled platform runtime and embedded LLD. No
+external compiler, LLVM tool, C runtime, startup object, SDK, or linker is
+invoked.
+
+Linux targets use a syscall runtime and embedded `lldELF`:
 
 - `x86_64-unknown-linux-gnu`
 - `x86_64-pc-linux-gnu`
@@ -93,8 +97,20 @@ external compiler, LLVM tool, C runtime, startup objects, or linker is invoked:
 
 The runtime accepts any `x86_64-*-linux-*` triple except GNU X32.
 
-Other target triples fall back to `clang` through `PATH`
-and require a matching static C runtime, startup objects, and linker.
+Windows targets use a Kernel32 runtime and embedded `lldCOFF`:
+
+- `x86_64-w64-windows-gnu`
+- `x86_64-pc-windows-msvc`
+- `x86_64-pc-windows-itanium`
+
+The runtime accepts any `x86_64-*-windows-*` triple. Generated PE32+
+executables import only `KERNEL32.dll`; the required import library is created
+internally as a temporary artifact. Cross-compiling from Linux and compiling
+natively with the Windows build both work without Clang, a Windows SDK, MinGW
+runtime libraries, or an external linker.
+
+Other target triples fall back to `clang` through `PATH` and require a matching
+static C runtime, startup objects, and linker.
 
 ## Author's note
 
@@ -116,14 +132,14 @@ to enable cross-compilation. Thanks to LLVM it is way easier than it might be
 
 But even having power of statically linked LLVM and LLD I still was very challanged with
 not being able to produce statically linked brainfuck programs due to reliance on libc
-for reading/outputting characters (putchar/getchar). For one target tripple I resolved it
-by adding assembly insertions with syscalls to avoid relying on libc at all for the x86_64-linux.
+for reading/outputting characters (putchar/getchar). The bundled runtimes solve this by
+using syscalls directly on x86_64 Linux and Kernel32 I/O on x86_64 Windows.
 
-So, in order to compile it to x86_64-linux target using this compiler you don't need any external software
-and the executable, even statically linked, is very tiny.
+So, in order to compile to a bundled x86_64 Linux or Windows target using this compiler,
+you don't need external compiler software and the produced executable stays tiny.
 
-Other targets for now require having `clang` and linkers + C runtime libs in order to compile. I'll try to 
-get rid of this problem soon by at least extending number of supported linkers and not relying solely on `clang`
+Other targets for now require having `clang`, a linker, and C runtime libraries in order to compile.
+I'll try to extend native target support over time.
 
 
 ## Development
@@ -132,6 +148,7 @@ get rid of this problem soon by at least extending number of supported linkers a
 
 - CMake 3.28 or newer
 - Ninja
+- pkg-config
 - Clang 18.1
 - clang-format 18.1
 - clang-tidy 18.1
@@ -147,6 +164,8 @@ get rid of this problem soon by at least extending number of supported linkers a
 - zstd development files and static library
 - ncurses development files and static library
 - libxml2 development files and static library
+- ICU development files and static libraries
+- LZMA development files and static library
 - C and C++ static runtime libraries
 - C runtime startup objects
 - System linker with fully static linking support
@@ -190,6 +209,14 @@ Run the cross-built compiler through Wine:
 
 ```sh
 wine build/gcc-release-w64/bfc.exe --version
+```
+
+The Windows build uses its native target by default. It can produce a Windows
+executable without external Clang or a Windows SDK:
+
+```sh
+wine build/gcc-release-w64/bfc.exe -o hello.exe hello.bf
+wine hello.exe
 ```
 
 ### Sanitizers and static analysis

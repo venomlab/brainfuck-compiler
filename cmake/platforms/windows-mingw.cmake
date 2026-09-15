@@ -30,5 +30,6 @@ function(bfc_configure_platform_llvm target)
         "${target}"
         PUBLIC
             lldELF
+            lldCOFF
     )
 endfunction()
