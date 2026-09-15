@@ -137,6 +137,9 @@ get rid of this problem soon by at least extending number of supported linkers a
 - clang-tidy 18.1
 - vcpkg with CLI11 installed for the `x64-linux` triplet
 - `VCPKG_ROOT` pointing to the vcpkg installation
+- MinGW-w64 GCC toolchain for Windows `x86_64` cross-builds
+- vcpkg support for the `x64-mingw-static-release` community triplet
+- Wine for running Windows cross-builds on Linux (optional)
 - LLVM 18.1 development files and static libraries
 - Polly 18.1 development files and static library
 - LLD 18.1 development files, static libraries, and linker
@@ -165,6 +168,28 @@ statically.
 
 ```sh
 make build-release
+```
+
+### Windows x86-64 cross-build
+
+Windows builds use MinGW-w64 GCC. LLVM, LLD, libstdc++, and libgcc are linked
+statically; the resulting executable depends only on Windows system DLLs.
+
+```sh
+make gcc-release-w64
+```
+
+The executable is written to `build/gcc-release-w64/bfc.exe`.
+
+The first build installs CLI11 and LLVM for the `x64-mingw-static-release`
+triplet through the isolated vcpkg manifest. This can take significant time
+when no matching binary-cache entries exist. Later builds reuse the build tree
+and vcpkg binary cache.
+
+Run the cross-built compiler through Wine:
+
+```sh
+wine build/gcc-release-w64/bfc.exe --version
 ```
 
 ### Sanitizers and static analysis
