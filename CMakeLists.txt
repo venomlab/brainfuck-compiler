@@ -22,61 +22,14 @@ option(
     OFF
 )
 
-find_package(LLVM 18.1 REQUIRED CONFIG)
-find_package(
-    LLD 18.1 REQUIRED CONFIG
-    HINTS "${LLVM_LIBRARY_DIRS}/cmake/lld"
-)
-find_package(
-    CLI11 REQUIRED CONFIG
-    HINTS "$ENV{VCPKG_ROOT}/installed/x64-linux"
-)
-find_program(
-    LLVM_CONFIG_EXECUTABLE
-    NAMES llvm-config-18
-    HINTS "${LLVM_TOOLS_BINARY_DIR}"
-    REQUIRED
-)
-
-execute_process(
-    COMMAND
-        "${LLVM_CONFIG_EXECUTABLE}"
-        --link-static
-        --libs
-        all-targets
-        lto
-        option
-        core
-        support
-    OUTPUT_VARIABLE BFC_LLVM_STATIC_LIBRARIES
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    COMMAND_ERROR_IS_FATAL ANY
-)
-separate_arguments(
-    BFC_LLVM_STATIC_LIBRARIES
-    NATIVE_COMMAND
-    "${BFC_LLVM_STATIC_LIBRARIES}"
-)
-
-execute_process(
-    COMMAND
-        "${LLVM_CONFIG_EXECUTABLE}"
-        --link-static
-        --system-libs
-        all-targets
-        lto
-        option
-        core
-        support
-    OUTPUT_VARIABLE BFC_LLVM_STATIC_SYSTEM_LIBRARIES
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    COMMAND_ERROR_IS_FATAL ANY
-)
-separate_arguments(
-    BFC_LLVM_STATIC_SYSTEM_LIBRARIES
-    NATIVE_COMMAND
-    "${BFC_LLVM_STATIC_SYSTEM_LIBRARIES}"
-)
+if (NOT BFC_PLATFORM)
+    message(FATAL_ERROR "BFC_PLATFORM must be set by the active toolchain")
+endif()
+set(BFC_PLATFORM_FILE "${PROJECT_SOURCE_DIR}/cmake/platforms/${BFC_PLATFORM}.cmake")
+if (NOT EXISTS "${BFC_PLATFORM_FILE}")
+    message(FATAL_ERROR "Unknown BFC platform: ${BFC_PLATFORM}")
+endif()
+include("${BFC_PLATFORM_FILE}")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
@@ -89,11 +42,7 @@ target_compile_features(
     INTERFACE
         cxx_std_20
 )
-target_link_options(
-    bfc_options
-    INTERFACE
-        "$<$<CONFIG:Release>:-static>"
-)
+bfc_configure_platform_options(bfc_options)
 
 add_library(bfc_warnings INTERFACE)
 
@@ -214,47 +163,14 @@ target_include_directories(
     PUBLIC
         "${PROJECT_SOURCE_DIR}/include"
 )
-target_include_directories(
-    bfc_llvm
-    SYSTEM PUBLIC
-        "${LLVM_INCLUDE_DIRS}"
-)
-target_link_directories(
-    bfc_llvm
-    PUBLIC
-        "${LLVM_LIBRARY_DIRS}"
-)
-separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND "${LLVM_DEFINITIONS}")
-target_compile_options(
-    bfc_llvm
-    PUBLIC
-        ${LLVM_DEFINITIONS_LIST}
-)
 target_link_libraries(
     bfc_llvm
     PUBLIC
         bfc_core
-        "$<$<NOT:$<CONFIG:Release>>:LLVM>"
-        "$<$<NOT:$<CONFIG:Release>>:lldELF>"
-        "$<$<CONFIG:Release>:$<TARGET_FILE:lldELF>>"
-        "$<$<CONFIG:Release>:$<TARGET_FILE:lldCommon>>"
     PRIVATE
         bfc_warnings
 )
-foreach(BFC_LLVM_LIBRARY IN LISTS BFC_LLVM_STATIC_LIBRARIES)
-    target_link_libraries(
-        bfc_llvm
-        PUBLIC
-            "$<$<CONFIG:Release>:${BFC_LLVM_LIBRARY}>"
-    )
-endforeach()
-foreach(BFC_LLVM_SYSTEM_LIBRARY IN LISTS BFC_LLVM_STATIC_SYSTEM_LIBRARIES)
-    target_link_libraries(
-        bfc_llvm
-        PUBLIC
-            "$<$<CONFIG:Release>:${BFC_LLVM_SYSTEM_LIBRARY}>"
-    )
-endforeach()
+bfc_configure_platform_llvm(bfc_llvm)
 
 # Executable
 file(

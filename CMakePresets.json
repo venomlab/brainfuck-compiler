@@ -19,7 +19,7 @@
       "name": "debug",
       "displayName": "Clang Debug",
       "inherits": "base",
-      "toolchainFile": "${sourceDir}/cmake/toolchains/clang.cmake",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/clang-linux.cmake",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
@@ -52,7 +52,7 @@
       "name": "clang-release",
       "displayName": "Clang Release",
       "inherits": "base",
-      "toolchainFile": "${sourceDir}/cmake/toolchains/clang.cmake",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/clang-linux.cmake",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }

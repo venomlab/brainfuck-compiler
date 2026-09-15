@@ -20,7 +20,9 @@
 CMAKE_CONFIG_INPUTS := \
 	CMakeLists.txt \
 	CMakePresets.json \
-	cmake/toolchains/clang.cmake
+	$(wildcard cmake/platforms/*.cmake) \
+	$(wildcard cmake/toolchains/*.cmake) \
+	$(wildcard cmake/vcpkg/*/vcpkg.json)
 
 clean:
 	@rm -rf build
