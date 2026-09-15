@@ -1,0 +1,15 @@
+{
+  "name": "brainfuck-compiler-w64-dependencies",
+  "version-string": "1.0.0",
+  "dependencies": [
+    "cli11",
+    {
+      "name": "llvm",
+      "default-features": false,
+      "features": [
+        "lld",
+        "target-all"
+      ]
+    }
+  ]
+}

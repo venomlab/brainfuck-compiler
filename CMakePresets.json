@@ -56,6 +56,20 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
+    },
+    {
+      "name": "gcc-release-w64",
+      "displayName": "GCC Release for Windows x86-64",
+      "inherits": "base",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "BUILD_TESTING": "OFF",
+        "CMAKE_BUILD_TYPE": "Release",
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/gcc-w64.cmake",
+        "VCPKG_MANIFEST_DIR": "${sourceDir}/cmake/vcpkg/w64",
+        "VCPKG_MANIFEST_INSTALL": "ON",
+        "VCPKG_TARGET_TRIPLET": "x64-mingw-static-release"
+      }
     }
   ],
   "buildPresets": [
@@ -78,6 +92,10 @@
     {
       "name": "clang-release",
       "configurePreset": "clang-release"
+    },
+    {
+      "name": "gcc-release-w64",
+      "configurePreset": "gcc-release-w64"
     }
   ],
   "testPresets": [

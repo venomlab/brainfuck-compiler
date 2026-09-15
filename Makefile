@@ -4,6 +4,7 @@
 	build-release \
 	build-sanitize \
 	build-tsanitize \
+	gcc-release-w64 \
 	clean \
 	lldb \
 	run \
@@ -69,6 +70,12 @@ build-release: build/clang-release/build.ninja
 run-release: build-release
 	@echo "-- PROGRAM OUTPUT:"
 	@./build/clang-release/bfc
+
+build/gcc-release-w64/build.ninja: $(CMAKE_CONFIG_INPUTS)
+	@cmake --preset gcc-release-w64
+
+gcc-release-w64: build/gcc-release-w64/build.ninja
+	@cmake --build --preset gcc-release-w64
 
 test: build
 	@ctest --preset tests
